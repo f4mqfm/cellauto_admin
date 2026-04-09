@@ -174,6 +174,17 @@ input {
   color: var(--text-h);
 }
 
+textarea {
+  font: inherit;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-h);
+  width: 100%;
+  box-sizing: border-box;
+}
+
 select {
   font: inherit;
   padding: 10px 12px;
@@ -184,6 +195,11 @@ select {
 }
 
 input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+textarea:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
@@ -229,6 +245,61 @@ input:focus-visible {
   padding: 12px;
   margin: 12px 0;
   background: color-mix(in srgb, var(--bg) 90%, var(--code-bg));
+}
+
+.swatchGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
+  gap: 8px;
+  max-width: 100%;
+}
+
+.swatchBtn {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 10px;
+  border: 2px solid var(--border);
+  cursor: pointer;
+  padding: 0;
+  box-sizing: border-box;
+  min-height: 36px;
+  transition: outline 0.15s, border-color 0.15s;
+}
+
+.swatchBtn:hover {
+  border-color: var(--accent-border);
+}
+
+.swatchBtn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.swatchQueue {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.swatchQueue__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--bg) 92%, var(--code-bg));
+  font-size: 13px;
+}
+
+.swatchQueue__dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  flex-shrink: 0;
 }
 
 .grid2 {

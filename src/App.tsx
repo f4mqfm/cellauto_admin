@@ -3,6 +3,8 @@ import './App.css'
 import { getCurrentUser, login, type User } from './lib/api'
 import { clearAuth, loadAuth, saveAuth } from './lib/auth'
 import { UsersAdmin } from './admin/UsersAdmin'
+import { ListsWordsAdmin } from './lists/ListsWordsAdmin'
+import { ColorListsAdmin } from './colorLists/ColorListsAdmin'
 
 function App() {
   const [loginValue, setLoginValue] = useState('')
@@ -11,7 +13,7 @@ function App() {
   const [error, setError] = useState<string | null>(null)
   const [token, setToken] = useState<string | null>(null)
   const [user, setUser] = useState<User | null>(null)
-  const [activePage, setActivePage] = useState<'users' | null>(null)
+  const [activePage, setActivePage] = useState<'users' | 'lists' | 'colorLists' | null>(null)
 
   useEffect(() => {
     const auth = loadAuth()
@@ -101,6 +103,22 @@ function App() {
                 Felhasználók kezelése
               </button>
 
+              <button
+                className={activePage === 'lists' ? 'menuItem menuItem--active' : 'menuItem'}
+                onClick={() => setActivePage('lists')}
+                disabled={busy}
+              >
+                Szólisták
+              </button>
+
+              <button
+                className={activePage === 'colorLists' ? 'menuItem menuItem--active' : 'menuItem'}
+                onClick={() => setActivePage('colorLists')}
+                disabled={busy}
+              >
+                Színlisták
+              </button>
+
               <div className="menubar__spacer" />
 
               <button className="counter" onClick={handleRefreshUser} disabled={busy}>
@@ -166,6 +184,10 @@ function App() {
               </div>
             ) : activePage === 'users' && token && user ? (
               <UsersAdmin token={token} currentUser={user} onCurrentUserUpdated={handleCurrentUserUpdated} />
+            ) : activePage === 'lists' && token ? (
+              <ListsWordsAdmin token={token} />
+            ) : activePage === 'colorLists' && token ? (
+              <ColorListsAdmin token={token} />
             ) : null}
           </div>
         )}
