@@ -1,0 +1,4 @@
+https://www.youtube.com/watch?v=N0jSqWeyeFU
+Geda Gábor altal tanitott: A programozás módszertani alapjai
+https://mathworld.wolfram.com/CellularAutomaton.html
+http://lambda.inf.elte.hu/ElementaryCellularAutomaton.xml

@@ -1,0 +1,91 @@
+Szakdolgozat — három projekt egy helyre (admin + api + www)
+============================================================
+
+Cél
+---
+A cellauto három részének (admin felület, api backend, www) tisztított másolata
+egy mappában, hogy a szakdolgozat írásakor (képernyőképek, kódrészletek,
+fájllista) ne kelljen három helyen keresgélni.
+
+Előfeltétel
+------------
+- rsync ajánlott (gyorsabb, --delete szinkron); ha nincs, a szkript GNU tarral
+  is lefut ugyanazzal a kizáráslistával.
+  Telepítés Debian/Ubuntu: sudo apt install rsync
+
+Gyors használat
+----------------
+1) Nyisd meg terminálban:
+   cd .../admin/szakdolgozat/scripts
+
+2) Futtasd:
+   chmod +x collect-sources.sh
+   ./collect-sources.sh
+
+Alapértelmezés: a szkript feltételezi, hogy a három repo testvére egymásnak:
+   CELLAUTO_ROOT/
+     admin/    (ebből a repóból nyitod a szakdolgozat mappát)
+     api/
+     www/
+
+Ha máshol vannak, add meg a gyökért:
+   export CELLAUTO_ROOT=/teljes/út/a/cellauto/szülőmappáig
+   ./collect-sources.sh
+
+Kimenet (alapértelmezés)
+-----------------------
+   CELLAUTO_ROOT/gyujtett_forras_szakdolgozathoz/
+     admin/
+     api/
+     www/
+     MANIFEST.txt   (méret összefoglaló)
+
+Ez a cellauto mappa szintjén jön létre (testvér az admin, api, www mellett), hogy
+az rsync ne másolja önmagába a gyűjtőmappát.
+
+Saját kimeneti út:
+   export OUT_DIR=/ahova/akarod
+   ./collect-sources.sh
+
+A másolat kihagyja: node_modules, vendor, .git, dist, log/cache mappák nagy
+részét — lásd scripts/rsync-excludes.txt. Szükség szerint szerkeszd.
+
+LaTeX
+-----
+A thesis-ekf-template-en.tex az EKF osztályfájlhoz (thesis-ekf) készült
+példa-sablon; ha nincs telepítve az osztály, használd a kész magyar dolgozatot:
+
+  thesis-cellauto-hu.tex
+
+Bővített változat (minta szerinti fejezetstruktúra, részletes adatbázis
+és teljes API-összefoglaló + board-save részletek):
+
+  thesis-cellauto-hu-bovitett.tex
+  include/bov-*.tex   (beágyazott fejezetek)
+
+Fordítás (TeX Live példa):
+
+  Ubuntu: gyakran létezik a texlive-lang-hungarian csomag.
+  Debian (bookworm/trixie): a magyar babel/hyphenation a európai
+  nyelvi csomagban van — telepítsd ezt:
+
+  sudo apt install texlive-latex-recommended texlive-lang-european
+
+  Ha apt nem talál texlive-lang-hungarian-t, használd a fenti
+  texlive-lang-european-t a magyar \usepackage[magyar]{babel} fordításához.
+
+  cd .../admin/szakdolgozat
+  pdflatex thesis-cellauto-hu.tex
+  pdflatex thesis-cellauto-hu.tex
+
+A thesis-ekf-template-en.tex és a PDF mellékletek maradnak a
+szakdolgozat/ mappában; a gyujtett_forras csak a három alkalmazás tükre.
+
+A thesis-cellauto-hu.tex-ben cseréld ki a \placeholder{...} mezőket
+(szerző, nyilatkozat), és igazítsd a tanszék formai követelményeihez.
+
+Git / verziókezelő
+------------------
+Az alapértelmezett kimenet a cellauto gyökérben van, nem az admin repóban —
+általában nem kerül véletlenül commitra. Ha az OUT_DIR-t a repón belülre
+állítod, add hozzá a .gitignore-hoz az adott mappát.

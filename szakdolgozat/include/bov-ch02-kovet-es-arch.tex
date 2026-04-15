@@ -1,0 +1,33 @@
+\chapter{Követelmények és specifikáció}
+
+\section{Funkcionális követelmények (összefoglaló)}
+Az \texttt{admin/docs/kovetelmeny-specifikacio.md} részletesen táblázatokban rögzíti az autentikációt (login, Bearer token, \texttt{GET /api/user}), a felhasználókezelést admin szerepkörrel, a szólisták és szavak teljes életciklusát (tömeges felvitel, keresés, kétlépcsős pozíció-frissítés a \texttt{UNIQUE(list\_id, position)} miatt), valamint a színpaletták kezelését. A publikus kliens bejelentkezés után API-ból tölti a listákat és színeket; vendég módban korlátozottabb funkció érhető el.
+
+\section{Nem funkcionális követelmények}
+\begin{itemize}
+  \item Magyar felhasználói felület az adminban; hibák JSON üzenetből olvashatók.
+  \item A token böngésző \texttt{localStorage}-ban történő tárolása XSS szempontból figyelendő — éles környezetben CSP és szerver oldali védelem.
+  \item Skálázás: a listák jelenleg lapozás nélkül töltődnek; nagy adatmennyiség esetén backend oldali lapozás javasolt.
+\end{itemize}
+
+\chapter{Rendszerarchitektúra}
+
+\section{Komponensdiagram (logikai)}
+A böngésző a \texttt{www} és \texttt{admin} klienseket futtatja; mindkettő HTTPS-en, JSON-ben kommunikál az \texttt{api} Laravel alkalmazással. Az API az adatbázishoz JDBC-hez hasonló rétegen (Eloquent ORM) fér hozzá.
+
+\section{Hitelesítési folyamat}
+\begin{enumerate}
+  \item \texttt{POST /api/login} — a kliens elküldi a \texttt{login} (email vagy felhasználónév) és \texttt{password} mezőket.
+  \item Sikertelen hitelesítés: \texttt{401}; felfüggesztett felhasználó: \texttt{403}.
+  \item Siker: válaszban \texttt{token} (Sanctum personal access token) és \texttt{user} objektum.
+  \item További hívások: \texttt{Authorization: Bearer <token>}, \texttt{Accept: application/json}.
+\end{enumerate}
+
+\section{Jogosultsági rétegek}
+\begin{itemize}
+  \item \textbf{Nyilvános:} \texttt{GET /api/ping}, \texttt{POST /api/login}.
+  \item \textbf{\texttt{auth:sanctum}:} felhasználói profil, saját listák, színek, board mentések, valamint \texttt{GET /api/users} (jelen implementáció szerint minden felhasználó listázása bejelentkezve).
+  \item \textbf{\texttt{auth:sanctum} + \texttt{admin}:} új felhasználó, módosítás, felfüggesztés / aktiválás (\texttt{UserController} + \texttt{AdminMiddleware}).
+\end{itemize}
+
+\textbf{Megjegyzés:} az \texttt{admin/docs/api-spec.md} említ \texttt{DELETE /api/users} végpontot; a jelen \texttt{routes/api.php} fájlban \emph{nincs} regisztrálva felhasználó törlés — éles dokumentációban a tényleges útvonalak az irányadók.

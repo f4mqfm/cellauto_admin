@@ -1,0 +1,35 @@
+% Címlap előtti / eleji részek
+\frontmatter
+\maketitle
+
+\chapter*{Feladatkiírás}
+A hivatalos, aláírt feladatkiírás beszkenált változata \placeholder{ide kerüljön beszúrásként / mellékletként a tanszék utasítása szerint}.
+
+\chapter*{Szakdolgozati témaválasztó adatlap}
+A téma hivatalos rögzítése az intézmény \emph{Szakdolgozati témaválasztó adatlap} űrlapján történt. A dolgozathoz csatolt, aláírással és keltezéssel ellátott változat fájlneve: \textbf{\TemaValasztoPdf} (elérési út a forrásfa szerint: \texttt{\TemaValasztoUt}). A bevezetés fejezet \emph{Indoklás} szakasza ennek az adatlapnak a szakmai és oktatási indoklását bővíti ki úgy, hogy a formai követelményeknek megfelelő, önálló szöveges összefoglaló is keletkezzen. Ha az adatlapon rögzített \emph{pontos témacím} eltér a dolgozat címétől, a beadás előtt a címlapot és a hivatkozásokat szinkronizálni kell a tanszék utasítása szerint.
+
+\chapter*{Nyilatkozat}
+\placeholder{A tanszék által előírt nyilatkozat szövege (saját szellemi termék, hivatkozások, stb.).}
+
+\chapter*{Köszönetnyilvánítás}
+\placeholder{Opcionális köszönet.}
+
+\chapter*{Kivonat}
+Ez a dolgozat a \emph{Cellauto} nevű, három részből (\texttt{www} böngészős kliens, \texttt{api} Laravel REST szolgáltatás, \texttt{admin} React kezelőfelület) álló szoftverrendszer követelményeit, adatmodelljét, teljes API-szerződését és implementációs hátterét mutatja be. A rendszer célja a sejtautomaták interaktív oktatása: négyzetes és hexagonális rács, többféle szomszédsági szabály, felhasználói szó- és színpaletták, valamint táblaállapot-mentések REST API-n keresztül. A szöveg külön fejezetben közli a \texttt{api/docs} alapján összeállított, végpontszintű dokumentációt és az adatbázis táblák, kulcsok és idegen kulcsok részletes leírását.
+
+\textbf{Kulcsszavak:} sejtautomata, REST API, Laravel, React, adatbázis-tervezés, oktatási szoftver
+
+\chapter*{Minta szerinti fejezetstruktúra}
+Az alábbi felsorolás egy tipikus informatikai szakdolgozat tartalomjegyzékét követi; a következő oldalakon a fejezetek ehhez igazodnak:
+\begin{enumerate}
+  \item Bevezetés és célkitűzés (motiváció, \textbf{indoklás a témaválasztó adatlaphoz}, célok)
+  \item Irodalomkutatás, elméleti és szakmai háttér (sejtautomaták, kapcsolódó szoftverek)
+  \item Követelmények és specifikáció
+  \item Rendszer- és adatbázis-tervezés
+  \item A REST API teljes dokumentációja (végpontok, modellek, hibák)
+  \item Az admin és a publikus kliens megvalósítása
+  \item Telepítés, tesztelés, biztonság, minőség
+  \item Összegzés és továbbfejlesztés
+\end{enumerate}
+
+\tableofcontents

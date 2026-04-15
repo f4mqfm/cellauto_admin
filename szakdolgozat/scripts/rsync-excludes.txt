@@ -1,0 +1,33 @@
+# Kizárások — minden rsync forrás gyökeréhez képest relatív (admin / api / www)
+
+# Ha a kimenet mégis az admin/szakdolgozat alá kerülne, ne másolja önmagába:
+szakdolgozat/gyujtett_forras/
+
+.git/
+.idea/
+.vscode/
+
+node_modules/
+vendor/
+dist/
+dist-ssr/
+build/
+.next/
+.nuxt/
+.cache/
+coverage/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Laravel cache / log (api projektnél)
+storage/framework/cache/
+storage/framework/sessions/
+storage/framework/views/
+storage/logs/
+
+# Opcionális: nagy binárisok — szedd ki a kommentet, ha a PDF-eket is akarod kihagyni a másolatból
+# *.pdf
+# *.zip

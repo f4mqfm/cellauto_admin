@@ -1,0 +1,115 @@
+\chapter{A REST API teljes dokumentációja}
+
+\section{Általános szerződés}
+\begin{itemize}
+  \item \textbf{Alap útvonal:} minden végpont az \texttt{/api} prefix alatt érhető el (a reverse proxy konfigurációjától függően lehet relatív \texttt{/api} vagy teljes host).
+  \item \textbf{Tartalomtípus:} kérésekben \texttt{Content-Type: application/json} (ahol van törzs); válaszban \texttt{Accept: application/json} javasolt.
+  \item \textbf{Hitelesítés:} védett végpontokon \texttt{Authorization: Bearer <token>}.
+  \item \textbf{Hibák:} \texttt{401} — nincs vagy érvénytelen token; \texttt{403} — nincs jogosultság (szerepkör vagy idegen erőforrás); \texttt{404} — nincs találat; \texttt{422} — validációs hiba (Laravel formátum).
+\end{itemize}
+
+\section{Végpontok összesítő táblázata}
+A táblázat a \texttt{api/routes/api.php} és az \texttt{api/docs/*.md} fájlok alapján készült (2026 áprilisi állapot).
+
+{\small
+\begin{longtable}{@{}llp{6.8cm}@{}}
+\toprule
+\textbf{HTTP} & \textbf{Útvonal} & \textbf{Közbenső réteg / megjegyzés} \\
+\midrule
+\endfirsthead
+\multicolumn{3}{c}{\tablename\ \thetable{} — folytatás} \\
+\toprule
+\textbf{HTTP} & \textbf{Útvonal} & \textbf{Közbenső réteg / megjegyzés} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{3}{r}{Folytatódik\ldots} \\
+\endfoot
+\bottomrule
+\endlastfoot
+
+GET & \texttt{/api/ping} & Nyilvános; egészségügyi válasz JSON-ban. \\
+POST & \texttt{/api/login} & Nyilvános; body: \texttt{login}, \texttt{password}. \\
+\midrule
+GET & \texttt{/api/user} & \texttt{auth:sanctum}; aktuális felhasználó. \\
+GET & \texttt{/api/users} & \texttt{auth:sanctum}; felhasználók listája. \\
+POST & \texttt{/api/users} & \texttt{auth:sanctum} + \texttt{admin}; új user. \\
+PUT & \texttt{/api/users/\{id\}} & \texttt{auth:sanctum} + \texttt{admin}; módosítás. \\
+POST & \texttt{/api/users/\{id\}/suspend} & \texttt{auth:sanctum} + \texttt{admin}. \\
+POST & \texttt{/api/users/\{id\}/unsuspend} & \texttt{auth:sanctum} + \texttt{admin}. \\
+\midrule
+GET & \texttt{/api/lists} & \texttt{auth:sanctum}; saját listák. \\
+POST & \texttt{/api/lists} & \texttt{auth:sanctum}; body: \texttt{name}. \\
+GET & \texttt{/api/lists/\{list\}} & Lista + szavak; csak tulajdonos. \\
+PUT & \texttt{/api/lists/\{list\}} & Átnevezés; body: \texttt{name}. \\
+DELETE & \texttt{/api/lists/\{list\}} & Lista + szavak törlése. \\
+GET & \texttt{/api/lists/\{list\}/words} & Szavak \texttt{position} szerint. \\
+POST & \texttt{/api/lists/\{list\}/words} & body: \texttt{word}, \texttt{position}. \\
+PUT & \texttt{/api/lists/\{list\}/words/\{word\}} & Részleges; legalább egy mező. \\
+DELETE & \texttt{/api/lists/\{list\}/words/\{word\}} & Szó törlése. \\
+\midrule
+GET & \texttt{/api/color-lists} & Saját színes listák. \\
+POST & \texttt{/api/color-lists} & body: \texttt{name}. \\
+GET & \texttt{/api/color-lists/\{color\_list\}} & Lista + színek. \\
+PUT & \texttt{/api/color-lists/\{color\_list\}} & body: \texttt{name}. \\
+DELETE & \texttt{/api/color-lists/\{color\_list\}} & Lista + színek törlése. \\
+GET & \texttt{/api/color-lists/\{color\_list\}/colors} & Színek rendezve. \\
+POST & \texttt{/api/color-lists/\{color\_list\}/colors} & body: \texttt{color}, \texttt{position}. \\
+PUT & \texttt{/api/color-lists/\{color\_list\}/colors/\{color\}} & Részleges frissítés. \\
+DELETE & \texttt{/api/color-lists/\{color\_list\}/colors/\{color\}} & Szín törlése. \\
+\midrule
+GET & \texttt{/api/board-save-groups} & Saját csoportok; rendezés: \texttt{position}, \texttt{id}. \\
+POST & \texttt{/api/board-save-groups} & Új csoport; body: \texttt{name}, opcionálisan \texttt{position}. \\
+GET & \texttt{/api/board-save-groups/\{group\}} & Egy csoport. \\
+PUT & \texttt{/api/board-save-groups/\{group\}} & Frissítés (implementáció: \texttt{name} kötelező). \\
+DELETE & \texttt{/api/board-save-groups/\{group\}} & CASCADE mentésekre. \\
+GET & \texttt{/api/board-save-groups/\{group\}/saves} & Összes mentés, \textbf{teljes payload}. \\
+POST & \texttt{/api/board-save-groups/\{group\}/saves} & body: \texttt{name}, \texttt{payload} (tömb/objektum JSON). \\
+GET & \texttt{/api/board-save-groups/\{group\}/saves/\{save\}} & Egy mentés. \\
+PUT & \texttt{/api/board-save-groups/\{group\}/saves/\{save\}} & \textbf{Mindkettő kötelező:} \texttt{name} + \texttt{payload}. \\
+DELETE & \texttt{/api/board-save-groups/\{group\}/saves/\{save\}} & Mentés törlése. \\
+\end{longtable}
+}
+
+\section{Bejelentkezés és ping}
+\subsection{\texttt{POST /api/login}}
+\textbf{Kérés törzs:} \texttt{login} (string) — e-mail \emph{vagy} felhasználónév; \texttt{password} (string).\\
+\textbf{Siker (200):} \texttt{token} (Sanctum personal access token plaintext), \texttt{user} objektum.\\
+\textbf{Hibák:} \texttt{401} \texttt{\{"error":"Hibás adatok"\}}; \texttt{403} felfüggesztett felhasználónál \texttt{\{"error":"A felhasználó fel van függesztve"\}}.
+
+\subsection{\texttt{GET /api/ping}}
+Válasz példa: \texttt{\{"ok":true,"message":"API mukodik"\}}.
+
+\section{Felhasználók (\texttt{api/docs/api-users.md})}
+\subsection{\texttt{GET /api/user} és \texttt{GET /api/users}}
+Bearer token szükséges. Az aktuális felhasználó illetve (implementáció szerint) az összes felhasználó rekord JSON-ban.
+
+\subsection{Admin műveletek}
+\texttt{POST /api/users} — kötelező: \texttt{name}, \texttt{email}, \texttt{username}, \texttt{password}; opcionális \texttt{role} (alap: \texttt{vendeg}).\\
+\texttt{PUT /api/users/\{id\}} — módosítható: \texttt{name}, \texttt{email}, \texttt{username}, \texttt{role}, opcionális új \texttt{password}.\\
+\texttt{POST .../suspend} és \texttt{POST .../unsuspend} — állapotváltás a dokumentáció szerint.
+
+\section{Szólisták és szavak (\texttt{api/docs/api-lists-words.md})}
+A \texttt{words} tábla egyedisége miatt a \texttt{POST} és \texttt{PUT} műveletek ütközhetnek, ha két sor pozícióját egyszerre cserélik egy lépésben — a dokumentáció átmeneti pozíciót vagy későbbi \emph{reorder} végpontot javasol. A \texttt{PUT /api/lists/\{list\}/words/\{word\}} hívás \texttt{422} választ ad, ha egyik frissítendő mező sincs a kérésben.
+
+\section{Színpaletták (\texttt{api/docs/api-color-lists-colors.md})}
+A színek \texttt{list\_id} és \texttt{position} egyedisége miatt ugyanaz a csere-probléma mint a szavaknál. A \texttt{color} mező hossza a sémában korlátozott (tipikusan 50 karakter).
+
+\section{Táblaállapot mentések}
+\subsection{Üzleti követelmény és implementáció eltérése}
+Az \texttt{api/docs/kovetelmenyspecifikacio-tablamentesek.md} rögzíti: a \texttt{GET .../saves} lista a teljes \texttt{payload} mezőt visszaadja; a \texttt{PUT .../saves/\{save\}} mindkét mezőt (\texttt{name}, \texttt{payload}) kötelezően várja — ellentétben az \texttt{api-board-saves.md} korábbi „részleges frissítés” javaslatával. A szakdolgozatban a \textbf{követelmény dokumentum és a futó kód} az irányadó.
+
+\subsection{Payload séma (ajánlott, \texttt{api-board-saves.md})}
+Kötelező meta kulcsok: \texttt{schemaVersion} (int, jelenleg 1), \texttt{board} (\texttt{square}\,|\,\texttt{hex}), \texttt{neighbors} (szomszédsági mód string), \texttt{mode} (\texttt{play}\,|\,\texttt{test}). Cellák: vagy \texttt{cells} tömb \texttt{\{x,y,v\}} objektumokkal, vagy \texttt{matrix} + \texttt{viewRow} + \texttt{viewCol}. Opcionális: \texttt{wordListId}, \texttt{colorListId}, \texttt{maxLevel}, \texttt{delay}, \texttt{wordMode}, \texttt{drawLevel}.\\
+\textbf{Megjegyzés:} a backend a \texttt{payload}-ot strukturált JSON-ként tárolja; a részletes belső kulcsok szerinti szerveroldali séma-validáció a dokumentáció szerint \emph{nem} kötelező végrehajtva.
+
+\section{cURL példák (rövid)}
+\begin{lstlisting}
+curl -X POST http://localhost:8000/api/login \
+  -H "Content-Type: application/json" \
+  -d '{"login":"admin@example.com","password":"secret"}'
+
+curl http://localhost:8000/api/lists \
+  -H "Authorization: Bearer TOKEN" \
+  -H "Accept: application/json"
+\end{lstlisting}

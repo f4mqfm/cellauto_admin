@@ -1,0 +1,41 @@
+\chapter{Az admin és a publikus kliens megvalósítása}
+
+\section{Admin (React, TypeScript, Vite)}
+Az admin SPA moduljai: bejelentkezés, felhasználók kezelése (csak \texttt{admin} szerepkörrel elérhető menü), szólisták és színpaletták. A token és a felhasználó \texttt{localStorage}-ban tárolódik (\texttt{cellauto\_admin\_token}, \texttt{cellauto\_admin\_user}). A hibák kinyerése több JSON mezőből történik (\texttt{error}, \texttt{message}, Laravel \texttt{errors}).
+
+\section{A \texttt{www} kliens}
+Vanilla JS modulok: \texttt{script.js} (rács, szabályok, generációk), \texttt{app.js} (bejelentkezés, lista- és színbetöltés, dinamikus CSS a hex színekhez), \texttt{board-save.js} (mentési csoportok és slotok UI), \texttt{api.js} (fetch wrapper). A PHP oldal routere a statikus és API-proxy útvonalakat szolgálja ki a környezettől függően.
+
+\chapter{Telepítés, tesztelés, biztonság}
+
+\section{Telepítés}
+\texttt{composer run setup} az API repóban: függőségek, kulcs, migráció, npm build. Fejlesztői mód: \texttt{composer run dev}. Éles: \texttt{.env}, \texttt{php artisan migrate --force}, opcionálisan queue worker.
+
+\section{Tesztelés}
+\texttt{composer run test} — PHPUnit tesztek. Az \texttt{implementacios-terv.md} további feature teszteket javasol (auth, board CRUD folyamat).
+
+\section{Biztonság}
+Sanctum tokenek; admin middleware; HTTPS; élesben CSP és XSS védelem; jelszavak hash-elve (\texttt{bcrypt}).
+
+\chapter{Összegzés és továbbfejlesztés}
+
+\section{Eredmény}
+A dolgozat egy összhangban lévő háromrétegű rendszert mutat be elméleti indokkal, részletes adatmodellel és teljes REST áttekintéssel.
+
+\section{Irányok}
+Form Request validáció, egységes hiba JSON, lapozás a listáknál, board lista válasz payload nélkül opcionális query-vel, reorder végpontok, bővített tesztlefedettség.
+
+\begin{thebibliography}{9}
+\bibitem{wolfram2002}
+\textsc{Wolfram, S.}: \emph{A New Kind of Science}, Wolfram Media, 2002.
+\bibitem{laravel}
+\textsc{Laravel dokumentáció}, \url{https://laravel.com/docs}
+\bibitem{react}
+\textsc{React dokumentáció}, \url{https://react.dev}
+\bibitem{cellauto-docs}
+\textsc{Cellauto projekt dokumentáció}, \texttt{admin/docs}, \texttt{api/docs}, \texttt{www/docs} könyvtárak.
+\end{thebibliography}
+
+\appendix
+\chapter{Forráskód és dokumentáció helye}
+A \texttt{collect-sources.sh} szkript a három alkalmazás másolatát egy mappába gyűjti (\texttt{UTMUTATO.txt}). A végpontok és sémák változásakor a markdown dokumentációt célszerű a kóddal együtt frissíteni.

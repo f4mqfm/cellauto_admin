@@ -1,0 +1,58 @@
+\section{Részletes oszlopleírások (üzleti táblák)}
+Az alábbi táblázatok a \texttt{database-schema.md} alapján foglalják össze az oszlopokat és kulcsokat (MySQL sémához illeszkedően).
+
+\subsection{\texttt{lists} és \texttt{words}}
+\begin{tabularx}{\textwidth}{@{}lX@{}}
+\toprule
+\textbf{lists} & \texttt{id} PK; \texttt{user\_id} FK $\rightarrow$ \texttt{users}; \texttt{name} varchar(255) NOT NULL; időbélyegek. \\
+\textbf{words} & \texttt{id} PK; \texttt{list\_id} FK; \texttt{word} varchar(255); \texttt{position} int unsigned NOT NULL; \texttt{UNIQUE(list\_id, word)}; \texttt{UNIQUE(list\_id, position)}. \\
+\bottomrule
+\end{tabularx}
+
+\subsection{\texttt{color\_lists} és \texttt{colors}}
+\begin{tabularx}{\textwidth}{@{}lX@{}}
+\toprule
+\textbf{color\_lists} & \texttt{id} PK; \texttt{user\_id} FK; \texttt{name}; időbélyegek. \\
+\textbf{colors} & \texttt{id} PK; \texttt{list\_id} FK $\rightarrow$ \texttt{color\_lists}; \texttt{color} varchar(50); \texttt{position}; \texttt{UNIQUE(list\_id, position)}. \\
+\bottomrule
+\end{tabularx}
+
+\subsection{\texttt{board\_save\_groups} és \texttt{board\_saves}}
+\begin{tabularx}{\textwidth}{@{}lX@{}}
+\toprule
+\textbf{board\_save\_groups} & \texttt{id} PK; \texttt{user\_id} FK CASCADE; \texttt{name}; \texttt{position} (opcionális sorrend); időbélyegek. \\
+\textbf{board\_saves} & \texttt{id} PK; \texttt{user\_id} FK CASCADE; \texttt{board\_save\_group\_id} FK CASCADE; \texttt{name}; \texttt{payload} JSON NOT NULL; \texttt{UNIQUE(board\_save\_group\_id, name)}. \\
+\bottomrule
+\end{tabularx}
+
+\section{SQL sémarészletek (illusztráció)}
+A fejlesztői reprodukálhatóság érdekében az alábbiak a dokumentált \texttt{CREATE TABLE} szövegek rövidítés nélküli másolatai (a \texttt{api/docs/database-schema.md} fájlból).
+
+\subsection{\texttt{lists} és \texttt{words} — \texttt{CREATE TABLE}}
+\begin{lstlisting}
+CREATE TABLE `lists` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `user_id` bigint unsigned NOT NULL,
+  `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `fk_lists_user` (`user_id`),
+  CONSTRAINT `fk_lists_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `words` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `list_id` bigint unsigned NOT NULL,
+  `word` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `position` int unsigned NOT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `list_id` (`list_id`,`word`),
+  UNIQUE KEY `words_list_id_position_unique` (`list_id`,`position`),
+  CONSTRAINT `fk_words_list` FOREIGN KEY (`list_id`) REFERENCES `lists` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+\end{lstlisting}
+
+\textbf{Megjegyzés:} az első egyedi kulcs neve a sémában \texttt{list\_id}, ami összetéveszthető az oszlopnévvel; hosszabb távon beszédesebb indexnév javasolt.

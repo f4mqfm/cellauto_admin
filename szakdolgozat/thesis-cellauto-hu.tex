@@ -1,0 +1,215 @@
+% Szakdolgozat — Cellauto (admin + api + www)
+% Fordítás: pdflatex thesis-cellauto-hu.tex (kétszer a hivatkozásokhoz)
+\documentclass[12pt,a4paper,openany]{book}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[magyar]{babel}
+\usepackage{geometry}
+\geometry{margin=2.5cm}
+% \usepackage{microtype} % kikapcsolva: egyes TeX Live telepítéseknél hibát okoz a betűképző nélküli CM fontokkal
+\usepackage{setspace}
+\onehalfspacing
+\usepackage{xcolor}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true,linkcolor=blue,urlcolor=blue,citecolor=blue}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{listings}
+\lstset{basicstyle=\ttfamily\small,breaklines=true,frame=single,tabsize=2}
+
+\newcommand{\placeholder}[1]{\textit{\textcolor{gray}{[#1]}}}
+
+\title{Sejtautomata oktatási és demonstrációs rendszer\\[0.4em]
+\large Webes kliens, REST API és adminisztrációs felület}
+\author{\placeholder{Hallgató neve}\\\placeholder{Szak, azonosító}}
+\date{Eger, 2026}
+
+\begin{document}
+
+\frontmatter
+\maketitle
+
+\chapter*{Nyilatkozat}
+\placeholder{A tanszék / intézmény által előírt nyilatkozat szövege ide kerüljön (saját szellemi termék, hivatkozások, stb.).}
+
+\chapter*{Köszönetnyilvánítás}
+\placeholder{Opcionális köszönet a konzulensnek, családnak, társaknak.}
+
+\chapter*{Kivonat}
+A dolgozat egy három komponensből álló szoftverrendszer fejlesztését és működését mutatja be, amelynek célja a sejtautomaták interaktív tanítása és demonstrálása. A \emph{www} rész egy böngészőben futó sejtautomata-alkalmazás: négyzetes és hexagonális rács, több szomszédsági szabály, játék- és tesztmód, valamint API-alapú szó- és színpaletta-használat. A \emph{api} komponens Laravel alapú REST szolgáltatás: Sanctum tokenes hitelesítés, felhasználók, szólisták, színpaletták, valamint felhasználónkénti táblaállapot-mentések tárolása. Az \emph{admin} egy React/TypeScript SPA, amellyel jogosult adminisztrátorok a felhasználókat és a tartalomlistákat kezelik. A dolgozat összefoglalja a követelményeket, az architektúrát, a főbb végpontokat és adatmodelleket, valamint röviden kitér a biztonsági és továbbfejlesztési szempontokra is.
+
+\textbf{Kulcsszavak:} sejtautomata, REST API, Laravel, React, oktatási szoftver
+
+\tableofcontents
+
+\mainmatter
+
+\chapter{Bevezetés}
+
+\section{Motiváció és problémafelvetés}
+A sejtautomaták (cellular automata) diszkrét matematikai modellek, amelyek egyszerű lokális szabályokból bonyolult térbeli és időbeli mintázatokat hoznak létre. Oktatási környezetben fontos, hogy a hallgatók ne csak passzívan olvassanak a szabályokról, hanem kísérletezhessenek: különböző kezdeti állapotok, szomszédságok és vizualizációk (például hexagonális rács) segítenek az intuíció kialakításában.
+
+A fejlesztett rendszer három különálló, de egymásra épülő projektből áll:
+\begin{itemize}
+  \item \textbf{www} — a publikus, böngészőben futó sejtautomata felület;
+  \item \textbf{api} — a központi adat- és hitelesítési réteg (Laravel);
+  \item \textbf{admin} — belső adminisztrációs webalkalmazás (React).
+\end{itemize}
+Ez a szétválasztás megfelel a modern webes alkalmazások \emph{frontend} / \emph{backend} felosztásának: a kliensek a HTTP/JSON interfészen keresztül kommunikálnak, így a komponensek külön telepíthetők és karbantarthatók.
+
+\section{A dolgozat felépítése}
+A \ref{ch:elm}.\ fejezet röviden összefoglalja a sejtautomaták alapjait. A \ref{ch:arch}.\ fejezet a rendszerarchitektúrát és a fő követelményeket tárgyalja. A \ref{ch:api}., \ref{ch:admin}. és \ref{ch:www}.\ fejezetek rendre a backendet, az admin felületet és a publikus klienst részletezik. A \ref{ch:adat}.\ fejezet a táblaállapot-mentések adatmodelljét és API-szerződését foglalja össze. Végül az \ref{ch:ossz}.\ fejezet értékeli az elvégzett munkát és a továbblépési lehetőségeket.
+
+\chapter{Elméleti háttér: sejtautomaták}
+\label{ch:elm}
+
+\section{Fogalmak}
+Legyen adott egy véges vagy végtelen cellahalmaz (rács), minden cellához egy véges állapot halmazból érték rendelve, valamint egy \emph{frissítési szabály}, amely minden cellára megadja az új állapotot a szomszédok aktuális állapotai alapján, tipikusan szinkron lépésben. A klasszikus példa John Conway \emph{Életjátéka} kétrétű négyzetes rács mellett oldalsó szomszédokra épülő szabályrendszere.
+
+\section{Alkalmazásbeli megvalósítás}
+A \texttt{www} projektben a felhasználó a rács celláira kattintva állítja az állapotokat (több szín, több szint), majd lépésenként vagy folyamatosan futtatja a szabályt. A rendszer támogat négyzetes és hexagonális elrendezést, valamint több, az oktató által definiált \emph{szomszédsági módot} (például oldalsó, csúcs, életjáték-stílus). A vizuális visszajelzés és a vezérlők célja, hogy a matematikai tartalom közvetlenül kísérletezhető legyen.
+
+\chapter{Rendszerterv és architektúra}
+\label{ch:arch}
+
+\section{Áttekintés}
+A rendszer \emph{kliens–szerver} modellben működik. A böngészőben futó alkalmazás és az admin felület is HTTPS-en keresztül REST API hívásokat intéz az \texttt{api} szolgáltatáshoz. A hitelesítés Laravel Sanctum \emph{personal access token} (Bearer token) megoldásával történik: sikeres bejelentkezés után a kliens token tárolása mellett védett végpontokat érhet el.
+
+\section{Szerepkörök}
+A dokumentált modell négy szerepkört különböztet meg: \texttt{vendeg}, \texttt{diak}, \texttt{tanar}, \texttt{admin}. A felhasználó-kezelő admin modul a felületen kifejezetten csak \texttt{admin} szerepkörrel érhető el; a szerveren \texttt{AdminMiddleware} ellenőrzi a jogosultságot a kritikus műveleteknél.
+
+\section{Technológiai összefoglaló}
+\begin{center}
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Komponens} & \textbf{Technológia} \\
+\midrule
+\texttt{api} & Laravel 12, PHP 8.2+, Sanctum, SQLite (dev) / MySQL (tipikus éles) \\
+\texttt{admin} & React 19, TypeScript, Vite \\
+\texttt{www} & HTML/CSS/JavaScript (SPA jellegű modulok), PHP router konfiguráció \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section{Követelmények rövidítése}
+Az adminra vonatkozó követelményspecifikáció részletes táblázatokban rögzíti az autentikációt (login, token tárolás, profil frissítés), a felhasználói CRUD és felfüggesztés műveleteket, a szólisták és színpaletták kezelését (beleértve a kétlépcsős pozíció-frissítést az adatbázis egyediségi kényszere miatt), valamint a nem funkcionális elvárásokat (magyar UI, hibakezelés). Ezek a dokumentumok a fejlesztés és a szakdolgozat írása közös alapját képezik.
+
+\chapter{Backend: Laravel REST API}
+\label{ch:api}
+
+\section{Belépési pontok és middleware}
+Az API útvonalak a \texttt{routes/api.php} fájlban vannak regisztrálva. A védett csoportok az \texttt{auth:sanctum} middleware-re épülnek; az adminisztratív felhasználói műveletek további \texttt{admin} middleware-t igényelnek.
+
+\section{Publikus végpontok}
+A \texttt{GET /api/ping} végpont egészségellenőrzésre szolgál. A \texttt{POST /api/login} JSON törzset vár (\texttt{login}: e-mail vagy felhasználónév, \texttt{password}), és siker esetén tokent és felhasználói objektumot ad vissza. Inaktív vagy felfüggesztett felhasználó nem kap tokent (403).
+
+\section{Erőforrások}
+A backend lefedi többek között:
+\begin{itemize}
+  \item felhasználók listázása és saját profil (\texttt{GET /api/users}, \texttt{GET /api/user});
+  \item admin műveletek: létrehozás, módosítás, felfüggesztés / aktiválás;
+  \item szólisták és szavak CRUD műveletei pozícióval;
+  \item színpaletták és színek hasonló mintával.
+\end{itemize}
+A részletes útvonalak és válaszformák a \texttt{api/docs} könyvtárban található markdown fájlokban vannak dokumentálva.
+
+\section{REST alapú kommunikáció}
+A kliensek a HTTP protokoll standard műveleteit használják: \texttt{GET} olvasásra, \texttt{POST} új erőforrás létrehozására, \texttt{PUT}/\texttt{PATCH} módosításra, \texttt{DELETE} törlésre. A kérések és válaszok törzse tipikusan JSON, a \texttt{Accept: application/json} fejléc kéri a gépi feldolgozásra alkalmas választ. A hitelesített hívások az \texttt{Authorization: Bearer <token>} fejlécet viszik magukkal.
+
+\section{Fejlesztői és üzemeltetési megjegyzések}
+A \texttt{composer run setup} parancs a tipikus telepítési lépéseket automatizálja (függőségek, kulcs, migráció, frontend build). Éles környezetben szükséges a megfelelő \texttt{.env} beállítás, migráció és opcionálisan queue worker. A projekt dokumentációja felhívja a figyelmet: a controllerek részben közvetlen kérésolvasást alkalmaznak; hosszabb távon Form Request alapú validáció és egységes hibaválasz-formátum javasolt.
+
+\section{Üzenetsor és háttérfeladatok}
+A Laravel konfigurációja alapértelmezetten adatbázis-alapú queue drivert is alkalmazhat; ez lehetővé teszi, hogy a szinkron HTTP válaszidőtől függetlenül, későbbi feldolgozással fussanak időigényesebb műveletek. A szakdolgozat keretében a hangsúly a REST rétegen és az adattároláson van; a queue worker éles üzemben külön folyamatként indítandó.
+
+\chapter{Adminisztrációs felület}
+\label{ch:admin}
+
+\section{Cél és technológia}
+Az admin alkalmazás célja, hogy hitelesített adminisztrátorok böngészőből kezeljék a felhasználókat, a szólistákat és a színpalettákat, amelyek a sejtautomata ökoszisztéma részei. A megvalósítás React 19 és TypeScript alapú, Vite build eszközzel.
+
+\section{Autentikáció és állapot}
+A bejelentkezés után a kliens a Bearer tokent és a felhasználó objektumot a böngésző \texttt{localStorage} tárolójában helyezi el. Oldalbetöltéskor, ha érvényes adatok állnak rendelkezésre, a felület automatikusan bejelentkezett állapotba kerül. A kijelentkezés törli a tárolt hitelesítési adatokat.
+
+\section{Funkciók}
+Az admin modulok a követelményspecifikáció szerint biztosítják a felhasználók keresését, szerkesztését és felfüggesztését; a szólisták esetén tömeges szófelvitelt, sorrendezést (húzd és ejtsd), valamint a pozíciók kétlépcsős frissítését az egyediségi kényszer miatt; a színpalettáknál előre definiált hex színek választását és hasonló sorrendezést.
+
+\section{Biztonsági megjegyzés}
+A token \texttt{localStorage}-ban történő tárolása XSS esetén kockázatot jelenthet; éles környezetben a backend és a host HTTP biztonsági fejléceinek (CSP, stb.) összehangolt alkalmazása kiemelten fontos.
+
+\chapter{A publikus sejtautomata kliens (\texttt{www})}
+\label{ch:www}
+
+\section{Szerep}
+A \texttt{www} komponens közvetlenül szolgálja az oktatási és demonstrációs célt: interaktív tábla, generációk futtatása, színek és szintek kezelése. A kód modulárisan van szervezve (például \texttt{script.js} a szimuláció magját, \texttt{app.js} az API-hoz kötött szolgáltatásokat, \texttt{board-save.js} a mentés/betöltés UI-t tartalmazza).
+
+\section{API integráció}
+Bejelentkezés után a kliens a szervertől tölti a szólistákat és a színpalettákat, és dinamikus CSS-sel alkalmazza a kiválasztott színeket. Vendég módban korlátozottabb funkció érhető el (például szólista csak bejelentkezés után).
+
+\section{Táblaállapot mentése}
+A bejelentkezett felhasználó csoportokba szervezheti a mentéseit, és név szerint elmentheti az aktuális táblaállapotot JSON \emph{payload} formájában. A payload séma tartalmazza többek között a rács típusát (\texttt{square} / \texttt{hex}), a szomszédsági módot, a játék módot, valamint a cellák ritka (\texttt{cells}) vagy teljes mátrix formájú leírását. Opcionális mezők segítik a vezérlők visszaállítását (például \texttt{wordListId}, \texttt{colorListId}, késleltetés).
+
+\section{Felhasználói élmény}
+A felület célja, hogy a tanuló a matematikai tartalomra koncentrálhasson: a cellák kattintással állíthatók, a generációk követhetők, a szabály és a rács típusa váltogatható. A bejelentkezés modális ablakban történik; sikeres azonosítás után frissülnek a szólista- és színjellegű tipp szövegek. A mentés és betöltés felület csak hitelesített állapotban látható, és legördülő listákon keresztül választható ki a csoport, illetve a konkrét mentés.
+
+\chapter{Adatmodell és táblaállapot-mentések}
+\label{ch:adat}
+
+\section{Táblák}
+A \texttt{board\_save\_groups} tábla felhasználónkénti csoportokat reprezentál (név, opcionális pozíció). A \texttt{board\_saves} tábla egy csoporton belüli egyedi névvel rendelkező mentéseket tartalmaz; a tényleges állapot egy JSON oszlopban (\texttt{payload}) tárolódik. Külső kulcsok törléskor kaszkádot alkalmaznak, így a csoport törlése a hozzá tartozó mentéseket is eltávolítja.
+
+\section{Logikai adatmodell (ER áttekintés)}
+A táblák közötti fő kapcsolatok a következők: a \texttt{users} egyfelhasú kapcsolatban áll a \texttt{lists}, a \texttt{color\_lists} és a \texttt{board\_save\_groups} táblákkal (egy felhasználó több listát/csoportot hozhat létre). A \texttt{lists} és \texttt{words}, illetve a \texttt{color\_lists} és \texttt{colors} táblák egy–több kapcsolatot alkotnak: egy listához több szó vagy szín tartozik, sorrenddel (\texttt{position}). A \texttt{board\_save\_groups} és \texttt{board\_saves} szintén egy–több viszony: egy csoport több név szerinti mentést tárol. A \texttt{board\_saves} tábla a felhasználóra is hivatkozhat denormalizált jogosultság-ellenőrzés céljából; a részletes oszlopok és \texttt{CREATE TABLE} példák a \texttt{api/docs/database-schema.md} fájlban találhatók.
+
+\section{API viselkedés}
+A dokumentáció a csoportok és mentések CRUD végpontjait, valamint a jogosultság ellenőrzését (\texttt{403} nem saját erőforrás) rögzíti. Nagy mentések esetén a lista végpontoknál érdemes lehet a teljes payload visszaadását később finomítani (meta + részletes lekérés), ami az implementációs tervben is szerepel mint lehetséges fejlesztési irány.
+
+\section{Példa payload (vázlat)}
+Az alábbi JSON-részlet illusztrálja a \texttt{schemaVersion} mezővel jelölt, ritka cellatárolást (két nem üres cella koordinátákkal és értékkel):
+
+\begin{lstlisting}[firstnumber=1]
+{
+  "schemaVersion": 1,
+  "board": "square",
+  "neighbors": "side",
+  "mode": "play",
+  "cells": [
+    { "x": 10, "y": 12, "v": 1 },
+    { "x": 11, "y": 12, "v": 2 }
+  ]
+}
+\end{lstlisting}
+
+\chapter{Tesztelés, minőség, továbbfejlesztés}
+\label{ch:minoseg}
+
+A backendhez PHPUnit tesztek tartoznak (\texttt{composer run test}). A dokumentált implementációs terv fázisokra bontja a teendőket: dokumentáció és szerződés szinkronja, Form Request alapú validáció, egységes hibaválaszok, opcionális payload-séma validáció szerveren, további feature tesztek és CI integráció.
+
+\chapter{Összegzés}
+\label{ch:ossz}
+
+A dolgozat egy összetett, de jól szeparált webes rendszert mutat be, amely ötvözi a sejtautomaták oktatási értékét a modern full-stack webfejlesztés eszközeivel. A Laravel backend központi szerepet tölt be a hitelesítésben és az adattárolásban; az admin felület hatékony tartalomkezelést tesz lehetővé; a publikus kliens pedig a matematikai kísérletezés felületét biztosítja. A további munka során érdemes a validációt és az API válaszok egységességét erősíteni, valamint bővíteni az automatikus tesztek lefedettségét.
+
+\backmatter
+
+\begin{thebibliography}{9}
+
+\bibitem{wolfram2002}
+\textsc{Wolfram, S.}: \emph{A New Kind of Science}, Wolfram Media, 2002.
+
+\bibitem{laravel2025}
+\textsc{Laravel dokumentáció} (Laravel 12), elérhető: \url{https://laravel.com/docs}
+
+\bibitem{react2025}
+\textsc{React dokumentáció}, elérhető: \url{https://react.dev}
+
+\bibitem{sipser2012}
+\textsc{Sipser, M.}: \emph{Introduction to the Theory of Computation}, 3rd ed., Cengage Learning, 2012.
+
+\end{thebibliography}
+
+\appendix
+\chapter{Projektdokumentumok és forrásgyűjtés}
+A \texttt{admin/szakdolgozat/scripts/collect-sources.sh} szkript a három projekt (\texttt{admin}, \texttt{api}, \texttt{www}) tisztított másolatát egy közös mappába gyűjti (képernyőképekhez, kódrészletekhez). Részletek: \texttt{admin/szakdolgozat/UTMUTATO.txt}. A részletes követelmények és API leírások a \texttt{admin/docs}, \texttt{api/docs} és \texttt{www/docs} könyvtárakban találhatók.
+
+\end{document}

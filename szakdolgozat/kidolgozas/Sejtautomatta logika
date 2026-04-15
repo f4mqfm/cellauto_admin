@@ -1,0 +1,21 @@
+Sejtautomata logika — Cellauto (vázlat; a részletes, helyesírt szöveg a szakdolgozat .tex fájlban van)
+
+Rácsok
+- Négyzetes rács: a szimuláció négyzetrácson fut.
+- Hexagonális (hatszögű) rács: hatszögletű cellaelrendezés.
+
+Négyzetes rács — szomszédsági módok
+- Oldalszomszédok: fel, le, bal, jobb (4 szomszéd).
+- Átlós szomszédok: négy átló irány (4 szomszéd).
+
+Egyéni szabály (példa a feltöltött vázlat alapján)
+Egy cella a következő generációban élő lehet, ha üres, pontosan 1 élő szomszédja van az előző generációból, és nincs „régebbi generációs” szomszéd (implementációfüggő feltétel).
+
+Conway — Game of Life (B3/S23), Moore-szomszédság
+- Élő sejt túlél: 2 vagy 3 élő szomszéd.
+- Élő sejt meghal: <2 (alulnépesedés) vagy >3 (túlnépesedés).
+- Halott sejt születik: pontosan 3 élő szomszéd.
+
+Ábrák a kidolgozas mappában
+- logika.png — rácsok és szomszédsági módok (a szakdolgozat Elméleti háttér fejezetében)
+- sanctum.png — Sanctum hitelesítés (UML, a Rendszerterv / UML szakaszban)

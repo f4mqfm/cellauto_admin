@@ -1,0 +1,281 @@
+% Szakdolgozat sablon — fejezet- és alfejezet-struktúra a
+% admin/szakdolgozat/szakdolgozat_felepites_vazlat.pdf tartalma szerint (EKF / Kovács Ádám vázlat).
+% Osztály: thesis-ekf (lásd thesis-ekf-template-en.tex); a thesis-ekf.cls elérhetőnek kell lennie.
+% Fordítás: pdflatex szakdolgozat-sablon.tex (kétszer, ha szükséges)
+\documentclass{thesis-ekf}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[magyar]{babel}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true,linkcolor=blue,urlcolor=blue}
+
+\begin{document}
+
+\institute{Matematika- és Informatikai Intézet}
+\title{Szakdolgozat címe}
+\author{Hallgató neve\\szak}
+\supervisor{Konzulens neve\\beosztás}
+\city{Eger}
+\date{2026}
+\maketitle
+
+\tableofcontents
+\listoffigures
+\listoftables
+
+\chapter*{Formai követelmények és szerkesztési útmutató}
+\addcontentsline{toc}{chapter}{Formai követelmények és szerkesztési útmutató}
+
+A szakdolgozatot \LaTeX{} rendszerben kell megírni. A leggyakrabban használt sablon Tomács Tibor oktatóanyagai és mintái alapján készül; elérhetőségek és telepítőcsomag a tanszéki oldalon (\url{https://tomacstibor.uni-eszterhazy.hu/szakdolgozat.html}).
+
+A dolgozat szövegének stílusa törekedjen az egyensúlyra: nem baráti hangvételű, de nem is teljesen tudományosan távolságtartó. A cél egy közérthető, szakmailag igényes, de olvasmányos szöveg.
+
+\begin{table}[htbp]
+\centering
+\caption{A legfontosabb formai követelmények összefoglalása}
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Formai elem} & \textbf{Előírás} \\
+\midrule
+Tartalomjegyzék & \texttt{\string\tableofcontents} \\
+Ábra- és táblázatjegyzékek & \texttt{\string\listoffigures}, \texttt{\string\listoftables} \\
+Ábrafeliratok & Számozott, forrással és megtekintési dátummal \\
+Irodalomjegyzék & Számozott, IEEE-stílusban ajánlott \\
+Nyilatkozat & A dolgozat végén PDF formátumban csatolva \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Leadási szabályok: a végleges anyag feltöltése a Neptunon keresztül történik; a PDF ne legyen fájlvédett; a fájlnév a Neptun-kód legyen (nagybetűvel); ajánlott a forrás és kapcsolódó állományok \texttt{.zip} archívuma. A részletes feltételeket a mindenkori Tanulmányi és vizsgaszabályzat és a tanszéki tájékoztató tartalmazza.
+
+\chapter{Bevezetés}
+
+\section{Témaválasztás megindoklása}
+\begin{itemize}
+  \item Miért pont ezt a témát választottad?
+  \item Milyen aktuális iparági trendek, szakmai kihívások vagy személyes célok kapcsolódnak hozzá?
+\end{itemize}
+
+\section{Téma bemutatása}
+\begin{itemize}
+  \item Rövid áttekintés a témáról, releváns szakirodalmi háttér és alapfogalmak.
+  \item Kapcsolódó tudományos cikkek, piaci elemzések, ipari megoldások.
+\end{itemize}
+
+\section{Cél leírása}
+\begin{itemize}
+  \item Mit szeretnél elérni a dolgozattal?
+  \item Milyen várható eredményekre, fejlesztésekre számítasz?
+  \item Főbb mérföldkövek, amelyek a megvalósítás lépéseit jelölik.
+\end{itemize}
+
+\section{Hipotézis}
+Nem szükséges teljesen új dolgot felfedezni; egy ismert módszer vagy algoritmus adaptálása is megfelelő lehet.
+\begin{itemize}
+  \item Példa: „Az általam alkalmazott algoritmus gyorsabb lesz, mint a korábbi változatok.''
+  \item Példa: „Az új fejlesztési módszertannal csökkenthető a hibák száma.''
+\end{itemize}
+
+\begin{sloppypar}
+\textit{Megjegyzés:} A hipotézis megfogalmazása elsősorban akkor szükséges, ha a dolgozat iránya kutatásalapú, vagy ha mérhető teljesítményjavulást, új fejlesztési irányt, optimalizációt kívánsz igazolni. Ha a téma ezt nem indokolja, a célkitűzés rész megfelelően helyettesíti.
+\end{sloppypar}
+
+\section{Hasonló alkalmazások}
+\begin{itemize}
+  \item Milyen hasonló megoldások léteznek már a szakirodalomban vagy a piacon?
+  \item Hiányosságok, lehetséges továbbfejlesztések.
+  \item Miben tud segíteni az általad fejlesztett alkalmazás, miben új vagy jobb?
+\end{itemize}
+
+\section{Hivatkozások és bemutató linkek}
+A bevezetés végén javasolt három hivatkozás elhelyezése, ha a projekt szoftveres megvalósítása online is bemutatható. Az első link a forráskódra, a második a buildre (webes alkalmazás esetén weboldal), a harmadik egy 3--5 perces bemutató videóra mutasson.
+\begin{itemize}
+  \item GitHub (forráskód): \url{https://github.com/felhasznalo/projektKod}
+  \item GitHub (build): \url{https://github.com/felhasznalo/projektBuild}
+  \item Videó (rövid projektbemutató): \url{https://www.youtube.com/}
+\end{itemize}
+
+\chapter{Technológiai áttekintés}
+
+\section{Fejlesztői környezetek}
+\begin{itemize}
+  \item Milyen IDE-t használsz (pl.\ PyCharm, Visual Studio Code, IntelliJ stb.)?
+  \item Fontosabb funkciók, bővítmények, plug-inek.
+  \item Esetleges hátrányok, nehézségek.
+\end{itemize}
+
+\section{Programozási nyelvek}
+\begin{itemize}
+  \item Miért pont ezt (ezeket) a nyelv(ek)et választottad?
+  \item Előnyök, korlátok, közösségi támogatás.
+\end{itemize}
+
+\section{Verziókezelés}
+\begin{itemize}
+  \item Verziókövető eszköz (pl.\ Git) használata.
+  \item Branch-struktúra, Git-flow, egyéb módszerek.
+  \item CI/CD megoldások (automatizált teszt, build).
+\end{itemize}
+
+\section{Használt csomagok és keretrendszerek}
+Ebben az alfejezetben mutasd be a dolgozatban alkalmazott fontosabb könyvtárakat, csomagokat vagy fejlesztési keretrendszereket:
+\begin{itemize}
+  \item Milyen problémák megoldására használod őket?
+  \item Melyik nyelvhez kapcsolódnak?
+  \item Milyen alternatívák vannak, és miért pont ezt választottad?
+  \item Van-e közösségi támogatás, dokumentáció, hosszú távú karbantartás?
+\end{itemize}
+
+\chapter{Rendszerterv}
+
+\section{A rendszer célja}
+\begin{itemize}
+  \item Pontosan milyen problémát old meg a rendszer?
+  \item Célfelhasználók, felhasználási forgatókönyvek.
+\end{itemize}
+
+\section{Követelmények listája}
+\textbf{Funkcionális követelmények}
+\begin{itemize}
+  \item Adatbevitel, riportok, statisztika stb.
+  \item Szerepkörök (pl.\ felhasználó, admin).
+\end{itemize}
+\textbf{Nem-funkcionális követelmények}
+\begin{itemize}
+  \item Teljesítmény, skálázhatóság.
+  \item Biztonság, autentikáció, titkosítás.
+  \item Felhasználói élmény (UI, reszponzivitás).
+\end{itemize}
+
+\section{Használati esetek (Use case-ek)}
+\begin{itemize}
+  \item Use case diagramok.
+  \item Forgatókönyvek (például „Felhasználó regisztrál'', „Admin riportot készít'').
+\end{itemize}
+
+\section{Adatbázis-terv}
+Amennyiben a dolgozat tartalmaz adatbázist, elvárás, hogy az legalább a harmadik normálformának (3NF) megfeleljen. Be kell mutatni a táblák közötti kapcsolatokat, az attribútumfüggőségeket, kulcsokat, relációkat, valamint ajánlott ER-diagramot is mellékelni.
+
+\section{UML-diagramok, folyamatábrák, struktogramok}
+\begin{itemize}
+  \item UML osztálydiagram (Class diagram).
+  \item UML szekvenciadiagram (pl.\ bejelentkezési folyamat).
+  \item Folyamatábrák, struktogramok, ha szükséges.
+\end{itemize}
+
+\chapter{Saját szoftver megvalósítása}
+
+\section{Az alkalmazás felépítése}
+\begin{itemize}
+  \item Átfogó architektúra (frontend, backend, adatbázis).
+  \item Rétegek és komponensek, miként kommunikálnak egymással.
+\end{itemize}
+
+% Példa ábra — a \caption generálja a jegyzékbejegyzést
+\begin{figure}[htbp]
+\centering
+\fbox{\parbox{0.85\textwidth}{\centering\vspace{3em}\textit{[Ábra: architektúra vagy képernyőkép helye]}\vspace{3em}}}
+\caption{Példa ábra felirattal és forrásmegjelöléssel}
+\end{figure}
+
+\section{Backend bemutatása}
+\begin{itemize}
+  \item Keretrendszer (Django, Flask, Spring Boot stb.).
+  \item REST API, adatkezelés, külső szolgáltatások, háttérfolyamatok.
+\end{itemize}
+
+\section{Frontend bemutatása}
+\begin{itemize}
+  \item Framework (Angular, React, Vue stb.).
+  \item Komponensek, oldalak, navigáció.
+  \item UI/UX megfontolások (reszponzív design, validáció).
+\end{itemize}
+
+\section{Modulok bemutatása}
+A szoftveres megvalósítást érdemes modulok halmazaként strukturálni; minden modulnál:
+\begin{itemize}
+  \item \textbf{Cél:} feladatok, illeszkedés az alkalmazás többi részéhez.
+  \item \textbf{Bemenetek, kimenetek, funkciók.}
+  \item \textbf{Rövid kódrészlet} (legfeljebb háromnegyed oldal), GitHub-hivatkozás hosszabb részekhez.
+  \item \textbf{UML/folyamatábra} (opcionális) összetett logikához.
+  \item \textbf{Függőségek:} kapcsolat más modulokkal (közös adatbázis, API-hívások stb.).
+\end{itemize}
+
+\section{Futtatási leírás}
+\begin{itemize}
+  \item Rendszerkövetelmények (operációs rendszer, függőségek, könyvtárak).
+  \item Telepítési lépések (\texttt{git clone}, \texttt{npm install}, \texttt{pip install -r requirements.txt} stb.).
+  \item Adatbázis inicializálás, konfigurációs beállítások, migrációk.
+  \item Indítás (pl.\ \texttt{npm start}, \texttt{php artisan serve}).
+\end{itemize}
+
+\chapter{Tesztelés}
+
+\section{Manuális tesztelés}
+\begin{itemize}
+  \item Tesztforgatókönyvek, rövid leírás, bemenet, kimenet, eredmények.
+  \item Hibajavítás, újra tesztelés dokumentálása.
+\end{itemize}
+
+\section{Automatikus tesztelés}
+\begin{itemize}
+  \item Használt keretrendszerek (JUnit, pytest, PHPUnit stb.).
+  \item Tesztlefedettség (coverage-jelentések).
+  \item CI integráció (GitHub Actions, Jenkins), pipeline menete.
+\end{itemize}
+
+\chapter{Konklúzió és eredmények összehasonlítása}
+\begin{itemize}
+  \item A bevezetőben (Hipotézis) leírtak igazolása vagy cáfolata.
+  \item Összevetés a szakirodalomban ismert eredményekkel.
+  \item Esetleges mérési adatok kiértékelése, grafikonok, táblázatok.
+\end{itemize}
+
+\chapter{Összegzés}
+
+\section{Eredmények összefoglalása}
+\begin{itemize}
+  \item Mely célkitűzések valósultak meg?
+  \item Tapasztalatok a fejlesztés során.
+\end{itemize}
+
+\section{Tanulságok}
+\begin{itemize}
+  \item Milyen problémákkal szembesültél, hogyan oldottad meg őket?
+  \item Milyen új tudásra tettél szert?
+\end{itemize}
+
+\section{Jövőbeli fejlesztések}
+\begin{itemize}
+  \item Lehetséges továbbfejlesztések, funkcióbővítések.
+  \item Skálázhatóság, integrációk, optimalizálási lehetőségek.
+\end{itemize}
+
+\textit{Megjegyzés:} A dolgozat ne tartalmazzon hosszú forráskód-részleteket; javasolt az architektúra ábrákkal, folyamatábrákkal, UML-diagramokkal történő szemléltetése. A teljes kód legyen elérhető GitHub linken.
+
+\begin{thebibliography}{9}
+\addcontentsline{toc}{chapter}{\bibname}
+\bibitem{ekf-szakd}
+Eszterházy Károly Katolikus Egyetem, „Szakdolgozati sablon, bírálatilap és további információk,'' \url{https://uni-eszterhazy.hu/matinf/szakdolgozat}.
+\bibitem{w3c-html}
+World Wide Web Consortium, „HTML5 Specification,'' \url{https://www.w3.org/TR/html5/}.
+\bibitem{mdn-css}
+Mozilla Developer Network, „CSS: Cascading Style Sheets,'' \url{https://developer.mozilla.org/en-US/docs/Web/CSS}.
+\end{thebibliography}
+
+\chapter*{Nyilatkozat csatolása}
+\addcontentsline{toc}{chapter}{Nyilatkozat csatolása}
+
+A végleges PDF-hez a tanszék által közzétett nyilatkozatot kell csatolni. Általános lépések:
+\begin{enumerate}
+  \item A \texttt{nyilatkozat/nyilatkozat.tex} sablon kitöltése és PDF-be fordítása.
+  \item Nyomtatás, aláírás, beszkenelés PDF-be.
+  \item A szakdolgozat végén a \texttt{pdfpages} csomaggal: \texttt{\string\includepdf\{nyilatkozat/nyilatkozat.pdf\}} az \texttt{\string\end\{document\}} előtt.
+\end{enumerate}
+
+% \usepackage{pdfpages}
+% \includepdf{nyilatkozat/nyilatkozat.pdf}
+
+\end{document}

@@ -1,0 +1,69 @@
+\section{Táblaállapot mentések — részletes API (a \texttt{api-board-saves.md} alapján)}
+Ez a szakasz a mentési csoportok és mentések REST viselkedését és a \texttt{payload} ajánlott sémáját adja meg egy helyen, hogy a szakdolgozat önálló olvasásként is követhető legyen.
+
+\subsection{Fogalmak}
+\textbf{Csoport:} felhasználói „mappa” (pl. „Gyakorlatok”). \textbf{Mentés:} egy névvel ellátott pillanatkép a tábláról; mindig egy csoporthoz tartozik.
+
+\subsection{Hitelesítés}
+Minden végpont \texttt{auth:sanctum}. Fejlécek: \texttt{Authorization: Bearer <TOKEN>}, \texttt{Accept: application/json}, \texttt{Content-Type: application/json} (írásoknál).
+
+\subsection{Csoport végpontok}
+\begin{description}
+  \item[\texttt{GET /api/board-save-groups}] A bejelentkezett felhasználó összes csoportja; mezők: \texttt{id}, \texttt{user\_id}, \texttt{name}, \texttt{position}, időbélyegek; rendezés: \texttt{position} ASC, majd \texttt{id} ASC (implementáció szerint ellenőrizendő a controllerben).
+  \item[\texttt{POST /api/board-save-groups}] Body: \texttt{name} kötelező (max 255), \texttt{position} opcionális. \texttt{201} + létrejött objektum.
+  \item[\texttt{GET /api/board-save-groups/\{group\}}] Egy csoport; \texttt{403}, ha nem a saját.
+  \item[\texttt{PUT /api/board-save-groups/\{group\}}] A követelmény-specifikáció szerint a jelen kódban a \texttt{name} kötelező; \texttt{position} opcionális.
+  \item[\texttt{DELETE /api/board-save-groups/\{group\}}] Csoport törlése; a mentések CASCADE miatt törlődnek.
+\end{description}
+
+\subsection{Mentés végpontok}
+\begin{description}
+  \item[\texttt{GET .../\{group\}/saves}] A csoport összes mentése; a követelmény dokumentum szerint \textbf{teljes \texttt{payload}} minden elemnél; \texttt{403} ha nem saját csoport.
+  \item[\texttt{POST .../\{group\}/saves}] \texttt{name} kötelező, max 255, egyedi a csoporton belül; \texttt{payload} kötelező (JSON tömb/objektum); \texttt{201}.
+  \item[\texttt{GET .../\{group\}/saves/\{save\}}] Egy mentés teljes adatai; \texttt{403}/\texttt{404} ha nincs jogosultság vagy nincs találat.
+  \item[\texttt{PUT .../\{group\}/saves/\{save\}}] A \textbf{jelen implementációban mindkét mező kötelező:} \texttt{name} és \texttt{payload} (részleges frissítés nincs).
+  \item[\texttt{DELETE .../\{group\}/saves/\{save\}}] Mentés törlése.
+\end{description}
+
+\subsection{Payload séma — kötelező meta kulcsok}
+\begin{center}
+\begin{tabular}{@{}llp{7cm}@{}}
+\toprule
+\textbf{Kulcs} & \textbf{Típus} & \textbf{Leírás} \\
+\midrule
+\texttt{schemaVersion} & int & Jelenleg \texttt{1}; változáskor növelendő. \\
+\texttt{board} & string & \texttt{square} vagy \texttt{hex}. \\
+\texttt{neighbors} & string & Pl. \texttt{side}, \texttt{apex}, \texttt{hex}, \texttt{life}, \texttt{life\_hex} — a UI-val egyező értékek. \\
+\texttt{mode} & string & \texttt{play} vagy \texttt{test}. \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Cellák tárolása}
+\textbf{A) Ritka (\texttt{cells}):} tömb, elemek \texttt{\{ "x": int, "y": int, "v": int \}}; a koordináták a belső mátrix indexelésének felelnek meg.\\
+\textbf{B) Teljes rács:} \texttt{viewRow}, \texttt{viewCol}, \texttt{matrix} kétdimenziós tömb.
+
+\subsection{Opcionális UI-kontextus}
+\texttt{wordListId}, \texttt{colorListId}, \texttt{maxLevel}, \texttt{delay}, \texttt{wordMode} (\texttt{select}\,|\,\texttt{word}), \texttt{drawLevel} — ezek segítik a kliensnek a vezérlők visszaállítását betöltéskor.
+
+\subsection{Példa payload (JSON)}
+\begin{lstlisting}[firstnumber=1]
+{
+  "schemaVersion": 1,
+  "board": "square",
+  "neighbors": "side",
+  "mode": "play",
+  "maxLevel": 10,
+  "delay": 0.2,
+  "wordMode": "select",
+  "wordListId": 2,
+  "colorListId": 1,
+  "cells": [
+    { "x": 10, "y": 12, "v": 1 },
+    { "x": 11, "y": 12, "v": 2 }
+  ]
+}
+\end{lstlisting}
+
+\subsection{Implementációs eltérések jegyzőkönyve}
+A \texttt{kovetelmenyspecifikacio-tablamentesek.md} 8. fejezete szerint az \texttt{api-board-saves.md} korábbi javaslatai közül a PUT mentés részlegessége és a lista-válasz payload nélküli formája \textbf{nincs így megvalósítva}; a szakdolgozat a követelmény-SRS és a kód szerinti viselkedést tekinti mérvadónak.

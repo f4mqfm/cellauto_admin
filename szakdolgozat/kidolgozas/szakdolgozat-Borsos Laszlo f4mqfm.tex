@@ -1,0 +1,581 @@
+\documentclass{thesis-ekf}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[magyar]{babel}
+\usepackage{booktabs}
+\usepackage{graphicx}
+% Képek a kepek/ almappában; enélkül az includegraphics nem találja őket.
+\graphicspath{{kepek/}}
+\usepackage{array}
+\usepackage{longtable}
+\usepackage{hyperref}
+\usepackage{pdfpages}
+\hypersetup{colorlinks=true,linkcolor=blue,urlcolor=blue}
+\renewcommand{\arraystretch}{1.35}
+
+\begin{document}
+
+\institute{Matematika- és Informatikai Intézet}
+\title{Sejtautomaták elmélete és gyakorlati alkalmazásai}
+\author{Borsos László\\Programtervező informatikus BSc}
+\supervisor{Geda Gábor\\főiskolai docens}
+\city{Eger}
+\date{2026}
+\maketitle
+
+\tableofcontents
+\begin{thebibliography}{99}
+\addcontentsline{toc}{chapter}{\bibname}
+\bibitem{cellauto-spec}
+Cellauto projekt belső rendszer- és követelményspecifikáció, 2026.
+\bibitem{cellauto-api}
+Cellauto projekt REST API szerződés és végpontleírások, 2026.
+\bibitem{cellauto-db}
+Cellauto projekt relációs adatbázis-terv és sémaleírás, 2026.
+\bibitem{cellauto-impl}
+Cellauto projekt implementációs terv és fejlesztési ütemezés, 2026.
+\bibitem{laravel}
+Laravel Documentation, \url{https://laravel.com/docs/12.x}, megtekintve: 2026.04.13.
+\bibitem{sanctum}
+Laravel Sanctum Documentation, \url{https://laravel.com/docs/12.x/sanctum}, megtekintve: 2026.04.13.
+\bibitem{react}
+React Documentation, \url{https://react.dev/}, megtekintve: 2026.04.13.
+\end{thebibliography}
+\listoffigures
+\listoftables
+\includepdf[pages=-]{nyilatkozat Borsos Laszlo alairva.pdf}
+
+\chapter{Bevezetés}
+
+\section{Témaválasztás indoklása}
+A sejtautomaták olyan diszkrét, lokális szabályokra épülő modellek, amelyekből meglepően összetett globális viselkedés alakulhat ki. Informatikusként ez a kettősség --- egyszerű algoritmikus alapok és magas komplexitású emergens mintázatok --- különösen vonzó, mert közvetlenül kapcsolódik az algoritmuselmélethez, a szimulációhoz, a párhuzamos feldolgozáshoz és az adatelemzéshez. A témaválasztásomat az motiválta, hogy a modern mérnöki és természettudományos problémák egyre gyakrabban igényelnek olyan modelleket, amelyek jól kezelik a térbeli-időbeli kölcsönhatásokat.
+
+Személyes motivációmat jelentősen erősítette Geda Gábor oktató munkája az első félévben, különösen a Programozás módszertan alapjai tantárgy keretében. Ebben a kurzusban találkoztam először rendszerszinten a sejtautomatákkal, és nagy hatással volt rám, hogy rendkívül egyszerű lokális szabályokból mennyire összetett, látványos mintázatok állhatnak elő. Ez az élmény nemcsak érdeklődést keltett bennem, hanem tartós szakmai motivációt is adott: saját implementációban is reprodukálni és továbbvizsgálni akartam ezeket a mintázatokat.
+
+Az ipari és kutatási trendek szintén alátámasztják a témaválasztás időszerűségét. A komplex rendszerek modellezése --- például városi forgalom, járványterjedés, biológiai növekedés vagy anyagszerkezeti átalakulás --- ma már nem csupán elméleti kérdés, hanem gyakorlati döntéstámogató eszköz. A sejtautomaták ebben azért különösen hasznosak, mert jól skálázhatóak, természetesen párhuzamosíthatóak, és könnyen vizualizálhatóak.
+
+\section{A dolgozat témájának bemutatása}
+A dolgozat központi tárgya a sejtautomaták matematikai és informatikai alapjainak áttekintése, valamint egy saját fejlesztésű szoftveres keretrendszer bemutatása, amely alkalmas különböző automataszabályok vizsgálatára. A munka célja kettős: egyrészt megalapozott elméleti összefoglalót adni, másrészt olyan implementációs mintát felmutatni, amely oktatási és kutatási célra egyaránt alkalmas.
+
+A téma klasszikus irodalmi kiindulópontjai közé tartoznak John von Neumann önreprodukáló automatákkal kapcsolatos munkái, Stanislaw Ulam diszkrét rácsmodellezési megközelítése, valamint Stephen Wolfram rendszerezése az egydimenziós bináris szabályok osztályozására. A korszerű feldolgozások már a GPU-gyorsított szimulációt, a hibrid modelleket, és a gépi tanulással támogatott paraméterhangolást is tárgyalják.
+
+\section{Célkitűzések}
+A szakdolgozat fő célja egy olyan, moduláris felépítésű sejtautomata-platform tervezése és elkészítése, amely:
+\begin{itemize}
+  \item támogatja az 1D és 2D sejtautomata-rácsokat;
+  \item kezel periodikus és fix peremfeltételeket;
+  \item lehetővé teszi klasszikus szabályok (pl. 30, 90, 110, Conway) futtatását;
+  \item alkalmas teljesítménymérésre és eredmények reprodukálható exportjára;
+  \item biztosít vizuális elemzést és paraméterérzékenységi vizsgálatot.
+\end{itemize}
+
+A célkitűzések között kiemelt szerepet kap a mérhetőség. A dolgozat nem csupán bemutatja a működést, hanem összehasonlítja a különböző adatszerkezetek, frissítési stratégiák és futtatási módok hatását az időigényre és a memóriahasználatra.
+
+\section{Hipotézis}
+A dolgozat hipotézise szerint egy megfelelően absztrahált, réteges architektúrára épített sejtautomata-rendszerben a számítási teljesítmény és a bővíthetőség egyszerre növelhető. Feltételezem, hogy:
+\begin{enumerate}
+  \item a szabálykiértékelés bitműveletes optimalizálása legalább 20--30\%-os gyorsulást eredményez a naiv implementációhoz képest;
+  \item a rácsfrissítés kettős pufferelése csökkenti a szinkronizációs hibákat és átláthatóbbá teszi a kódot;
+  \item az egységes konfigurációs modell növeli a reprodukálhatóságot és egyszerűsíti a tesztelést.
+\end{enumerate}
+
+\section{Hasonló megoldások rövid áttekintése}
+Számos nyílt forrású eszköz érhető el sejtautomaták futtatására, de ezek többsége vagy oktatási célra készült minimális funkcionalitással, vagy túl általános keretrendszerként nehezebben tanulható. A Python ökoszisztémában gyakoriak a notebook alapú prototípusok, amelyek gyors kísérletezést tesznek lehetővé, de nagyobb méretű futtatásoknál teljesítménykorlátba ütköznek. A JavaScript alapú vizualizációs projektek interaktívak, de gyakran hiányzik belőlük a mérési és exportmodul.
+
+A saját rendszer tervezésekor ezért az volt a cél, hogy egyensúlyt teremtsen a fejleszthetőség, az oktathatóság és a futási teljesítmény között.
+
+\section{A dolgozat felépítése}
+A dolgozat szerkezete a következő logikát követi: az első fejezetek az elméleti és technológiai alapokat rögzítik, ezt követi a rendszerterv és a konkrét megvalósítás, majd a tesztelési és mérési eredmények értékelése zárja a munkát. Az összegzésben kitérek a hipotézis értékelésére, a korlátokra és a jövőbeli fejlesztési irányokra.
+
+\chapter{Elméleti háttér}
+
+\section{A sejtautomata fogalma}
+A sejtautomata olyan diszkrét dinamikus rendszer, amelyben a tér rácspontokra (cellákra) oszlik, az idő lépésekben halad, és minden cella állapota egy lokális szabály alapján frissül. A szabály bemenete tipikusan az adott cella és szomszédainak előző állapota. A modell legfontosabb jellemzője, hogy a globális viselkedés kizárólag lokális kölcsönhatásokból épül fel.
+
+Formálisan egy sejtautomata megadható az $(L, S, N, f)$ négyessel, ahol $L$ a rács, $S$ az állapottér, $N$ a szomszédsági reláció, $f$ pedig az átmeneti függvény. A szinkron frissítés azt jelenti, hogy minden cella új állapota az előző generáció alapján számolódik.
+
+\section{Történeti áttekintés}
+Az 1940-es évek végén Ulam és von Neumann olyan matematikai modelleket kerestek, amelyekben az önreprodukció és a komplex viselkedés diszkrét szabályokkal leírható. A későbbi évtizedekben Conway életjátéka népszerűsítette a témát, mert egyszerű szabályrendszerrel mutatott fel gazdag mintázatokat. A 2000-es években Wolfram munkái újra előtérbe helyezték az egydimenziós szabályrendszerek osztályozását, és rámutattak a számításelméleti összefüggésekre.
+
+\section{Osztályozás}
+\subsection{Dimenzió szerint}
+Egydimenziós automaták esetén a rács egy sor, tipikusan bináris állapottal. Kétdimenziós automatáknál a rács mátrix, a szomszédság lehet Moore vagy Neumann típusú. Magasabb dimenziókban a modellezés erősebb térbeli közelítést ad, de a számítási költség meredeken nő.
+
+\subsection{Állapottér szerint}
+Léteznek bináris és többállapotú modellek. A bináris modellek könnyen vizualizálhatóak és gyakran hatékonyan implementálhatók bitműveletekkel. A többállapotú változatok alkalmasak például biológiai vagy anyagtudományi folyamatok differenciáltabb leírására.
+
+\subsection{Frissítés szerint}
+Szinkron frissítésnél minden cella egyszerre frissül, aszinkron módban véletlen vagy determinisztikus sorrendben történik az állapotváltás. Az aszinkron dinamika sok fizikai és társadalmi folyamatot realisztikusabban modellez, azonban bonyolítja a reprodukálhatóságot.
+
+\section{Klasszikus szabályok}\label{sec:klasszikus-szabalyok}
+\subsection{Wolfram 30, 90 és 110}
+A Wolfram-szabályok 3 cellás környezetre és bináris állapottérre épülnek. A 30-as szabály kvázi-véletlen mintázatot ad, így pszeudovéletlen generálási feladatokban is vizsgálták. A 90-es szabály lineáris szerkezete miatt jól elemezhető, Pascal-háromszög moduló 2 struktúrával rokon mintát rajzol. A 110-es szabály különösen jelentős, mert bizonyítottan Turing-teljes.
+
+\subsection{Conway-féle életjáték}
+Az életjáték 2D bináris automata, Moore-szomszédsággal. Az ismert szabály röviden: egy élő sejt 2 vagy 3 élő szomszéd esetén túlél, üres sejt pedig pontosan 3 élő szomszéd esetén születik. A rendszer olyan stabil, periodikus és mozgó alakzatokat produkál, amelyek az algoritmikus önszerveződés szemléletes példái.
+
+\subsection{Sejtautomata logika a Cellauto alkalmazásban}
+A végfelhasználói program a sejtautomata szimulációt \textbf{négyzetes rácson} és \textbf{hexagonális (hatszögű) rácson} valósítja meg. A négyzetes táblán a szabályrendszer szempontjából két eltérő szomszédsági mód választható: \textbf{oldalszomszédok} (négy irány: fel, le, bal, jobb) és \textbf{átlós szomszédok} (négy átló). A hexagonális hálón a cellák hatszögletű elrendezésben helyezkednek el, és a szomszédság ennek megfelelően hat irányú (tipikus hexagonal neighborhood).
+
+A választható rács és szomszédsági mód közvetlenül befolyásolja, hogy egy cellához hány szomszéd tartozik, és így ugyanaz a szabály szövege más dinamikát eredményezhet más topológián. A felhasználói felületen ezért külön jelölt paraméterekkel lehet váltani a négyzetes és hexagonális nézet, valamint az oldalszomszéd- és átlószomszéd-alapú szabály között.
+
+\subsubsection{Egyéni szabályrendszer}
+A programban az alapértelmezettől eltérő, \textbf{egyéni szabályrendszer} is beállítható. A dokumentált logika szerint egy cella a következő generációban \textbf{élő} állapotba kerülhet, ha egyszerre teljesülnek az alábbi feltételek:
+\begin{itemize}
+  \item a cella az aktuális lépésben üres (halott);
+  \item pontosan egy élő szomszédja van az előző generációban;
+  \item nincs olyan szomszéd, amely „régebbi generációs'' állapotra utal (a konkrét implementáció a szomszédsági és időbeli függőség korlátozását jelenti).
+\end{itemize}
+
+Ez a szabály a klasszikus Conway-életjátéktól eltérő dinamikát ad: más kritikus sűrűségek és mintázatok alakulnak ki. Az egyéni szabályok célja, hogy oktatási és kísérleti célra a felhasználó összehasonlíthassa a különböző lokális feltételek hatását.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.72\textwidth]{squares lateral 4 gen.png}
+\caption{Négyzetes rács (oldalszomszédság), 4. generációs állapot}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.72\textwidth]{squares apex 4 gen.png}
+\caption{Négyzetes rács (átlós szomszédság), 4. generációs állapot}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.72\textwidth]{hex 4 gen.png}
+\caption{Hexagonális rács, 4. generációs állapot}
+\end{figure}
+
+\subsubsection{Conway-féle életjáték (Game of Life) szabályai a programban}
+A \textbf{Game of Life} a leggyakrabban használt klasszikus kétdimenziós sejtautomata. Szabályjelölése: \textbf{B3/S23} --- \textit{birth} ha pontosan 3 élő szomszéd, \textit{survival} ha 2 vagy 3 élő szomszéd (Moore-szomszédság, azaz a középponton kívüli nyolc szomszéd figyelembevétele).
+
+\paragraph{Élő sejt túlélése.}
+Egy élő sejt tovább él, ha 2 vagy 3 élő szomszédja van. Ha kevesebb mint 2 van, \textbf{alulnépesedés} miatt elpusztul; ha több mint 3, \textbf{túlnépesedés} miatt hal meg.
+
+\paragraph{Halott sejt születése.}
+Egy üres cella pontosan 3 élő szomszéd esetén válik élővé (születés).
+
+\begin{table}[htbp]
+\centering
+\caption{Conway életjáték: állapotátmenetek összefoglaló táblázata}
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Jelenlegi állapot} & \textbf{Élő szomszédok száma} & \textbf{Következő állapot} \\
+\midrule
+élő & 2 vagy 3 & élő \\
+élő & kevesebb mint 2 & halott (alulnépesedés) \\
+élő & több mint 3 & halott (túlnépesedés) \\
+halott & pontosan 3 & élő (születés) \\
+halott & más eset & halott \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Matematikai és informatikai jelentőség}
+A sejtautomaták kapcsolódnak a komplex rendszerek elméletéhez, a káoszelmélethez és a számításelmélethez. Informatikai szempontból különösen fontos, hogy:
+\begin{itemize}
+  \item támogatják a párhuzamos számítás intuitív modelljét;
+  \item alkalmasak algoritmikus mintafelismerésre;
+  \item jól vizsgálható bennük a lokális szabályok és globális viselkedés kapcsolata;
+  \item didaktikai szempontból kiválóan szemléltetik a diszkrét modellezést.
+\end{itemize}
+
+\chapter{Technológiai áttekintés}
+
+\section{Projektarchitektúra áttekintése}
+A Cellauto rendszer három, egymástól elkülönített, de szorosan együttműködő komponensből áll: `admin`, `api` és `www`. Az \texttt{api} komponens Laravel 12 alapú REST szolgáltatást biztosít, amely a központi üzleti logikát és adatkezelést valósítja meg. Az \texttt{admin} komponens React + TypeScript alapú adminisztrációs felület, ahol a felhasználók, szólisták és színlisták kezelése történik. A \texttt{www} komponens a végfelhasználói alkalmazás, ahol a sejtautomata tábla használata zajlik, és amely a bejelentkezés nélküli elérést is támogatja.
+
+A dokumentációk alapján a projekt alapelve, hogy a kliensrétegek ne tartalmazzanak duplikált üzleti logikát: a jogosultság, adatintegritás és perzisztencia szabályai a backendben érvényesülnek, a frontend pedig jól definiált API-szerződésre támaszkodik.
+
+\section{Backend technológia (\texttt{api})}
+A backend Laravel 12 keretrendszerrel készült PHP 8.2 környezetben. A hitelesítést Laravel Sanctum biztosítja Bearer token alapon. A védett végpontok az \texttt{auth:sanctum} middleware-en keresztül érhetők el, az adminisztrátori műveletekhez pedig külön \texttt{admin} middleware tartozik.
+
+A backend dokumentáció szerint a fejlesztői workflow része a gyors setup (\texttt{composer run setup}) és a fejlesztői futtatás (\texttt{composer run dev}), amely egyszerre indítja az alkalmazáskiszolgálót, queue workert és Vite build folyamatot. Ez a modell gyors iterációt tesz lehetővé és csökkenti a konfigurációs hibák esélyét.
+
+\section{Frontend technológiák (\texttt{admin} és \texttt{www})}
+Az admin felület dokumentációja React 19 + TypeScript + Vite 8 technológiai alapot rögzít. Az API alap URL-je környezeti változóval paraméterezhető (\texttt{VITE\_API\_BASE\_URL}, alapérték: \texttt{/api}), így fejlesztői és éles környezetben is rugalmasan konfigurálható.
+
+A végfelhasználói (\texttt{www}) dokumentációból az következik, hogy a felületnek vegyes hozzáférési modellt kell támogatnia: a publikus funkciók (például színek használata) bejelentkezés nélkül is elérhetők, miközben egyes erőforrások (pl. személyes szólisták) csak hitelesített felhasználónak jelennek meg. Ez a követelmény a frontend állapotkezelésben és az API-hívások kondicionális kezelésében is megjelenik.
+
+\section{Adatbázis és perzisztencia}
+A rendszer relációs modellje jól normalizált. A fő üzleti táblák:
+\begin{itemize}
+  \item \texttt{users}: felhasználó, szerepkör, felfüggesztési állapot;
+  \item \texttt{lists} és \texttt{words}: szólisták és listaelemek;
+  \item \texttt{color\_lists} és \texttt{colors}: palettalisták és színek;
+  \item \texttt{board\_save\_groups} és \texttt{board\_saves}: táblaállapot mentési struktúra.
+\end{itemize}
+
+A modellben több helyen kompozit egyedi kulcs védi az adatkonzisztenciát, például \texttt{(list\_id, position)} és \texttt{(board\_save\_group\_id, name)}. Ez közvetlen hatással van a kliensoldali sorrendezés mentésére, mivel ütközéselkerülő kétlépcsős frissítés szükséges.
+
+\section{API-szerződés és kommunikációs elvek}
+A projekt dokumentációjában a kommunikáció JSON formátumban történik, \texttt{Accept: application/json} és \texttt{Content-Type: application/json} fejlécekkel. A hibakezelésnél a frontend többféle backend válaszformát képes értelmezni (\texttt{error}, \texttt{message}, \texttt{errors}), ami javítja a robusztusságot heterogén hibaformátum mellett.
+
+A kulcsfontosságú végpontcsoportok:
+\begin{itemize}
+  \item Auth: \texttt{/api/login}, \texttt{/api/user};
+  \item Felhasználók: \texttt{/api/users} és admin műveletek;
+  \item Szólisták/szavak: \texttt{/api/lists} és beágyazott \texttt{/words};
+  \item Színlisták/színek: \texttt{/api/color-lists} és beágyazott \texttt{/colors};
+  \item Táblaállapot mentések: \texttt{/api/board-save-groups} és \texttt{/saves}.
+\end{itemize}
+
+\section{Részletes API híváslista}
+Ebben az alfejezetben összefoglalom a projektben használt, lényegi REST végpontokat. A végpontok JSON formátumúak, a védett útvonalak Bearer tokennel érhetők el.
+
+\subsection{Publikus végpontok}
+\small
+\begin{longtable}{>{\raggedright\arraybackslash}p{0.40\textwidth}>{\raggedright\arraybackslash}p{0.12\textwidth}>{\raggedright\arraybackslash}p{0.42\textwidth}}
+\toprule
+\textbf{Végpont} & \textbf{Metódus} & \textbf{Funkció} \\
+\midrule
+\path{/api/ping} & GET & Elérhetőségi teszt; gyors állapotellenőrzés. \\[4pt]
+\path{/api/login} & POST & Bejelentkezés email vagy username + jelszó párossal; token és user objektum visszaadása. \\[4pt]
+\bottomrule
+\end{longtable}
+\normalsize
+
+\subsection{Hitelesített felhasználói végpontok}
+\small
+\begin{longtable}{>{\raggedright\arraybackslash}p{0.40\textwidth}>{\raggedright\arraybackslash}p{0.12\textwidth}>{\raggedright\arraybackslash}p{0.42\textwidth}}
+\toprule
+\textbf{Végpont} & \textbf{Metódus} & \textbf{Funkció} \\
+\midrule
+\path{/api/user} & GET & Aktuális bejelentkezett felhasználó adatai. \\[4pt]
+\path{/api/users} & GET & Felhasználók listázása (admin felületen megjelenítve). \\[4pt]
+\path{/api/lists} & \shortstack[l]{GET\\POST} & Szólisták lekérdezése és létrehozása. \\[4pt]
+\path{/api/lists/{id}} & \shortstack[l]{GET\\PUT\\DELETE} & Egy szólista lekérése, átnevezése, törlése. \\[4pt]
+\path{/api/lists/{id}/words} & \shortstack[l]{GET\\POST} & Lista szavainak lekérése és bővítése. \\[4pt]
+\path{/api/lists/{id}/words/{wordId}} & \shortstack[l]{PUT\\DELETE} & Szó szerkesztése vagy törlése. \\[4pt]
+\path{/api/color-lists} & \shortstack[l]{GET\\POST} & Színlisták lekérdezése és létrehozása. \\[4pt]
+\path{/api/color-lists/{id}} & \shortstack[l]{GET\\PUT\\DELETE} & Egy színlista lekérése, átnevezése, törlése. \\[4pt]
+\path{/api/color-lists/{id}/colors} & \shortstack[l]{GET\\POST} & Színek listázása és hozzáadása. \\[4pt]
+\path{/api/color-lists/{id}/colors/{colorId}} & \shortstack[l]{PUT\\DELETE} & Szín módosítása vagy törlése. \\[4pt]
+\path{/api/board-save-groups} & \shortstack[l]{GET\\POST} & Mentési csoportok listázása és létrehozása. \\[4pt]
+\path{/api/board-save-groups/{id}} & \shortstack[l]{GET\\PUT\\DELETE} & Mentési csoport olvasása, módosítása, törlése. \\[4pt]
+\path{/api/board-save-groups/{id}/saves} & \shortstack[l]{GET\\POST} & Csoport mentéseinek listázása és új mentés létrehozása. \\[4pt]
+\path{/api/board-save-groups/{id}/saves/{saveId}} & \shortstack[l]{GET\\PUT\\DELETE} & Konkrét mentés lekérése, módosítása, törlése. \\[4pt]
+\bottomrule
+\end{longtable}
+\normalsize
+
+\subsection{Admin jogosultságú végpontok}
+\small
+\begin{longtable}{>{\raggedright\arraybackslash}p{0.40\textwidth}>{\raggedright\arraybackslash}p{0.12\textwidth}>{\raggedright\arraybackslash}p{0.42\textwidth}}
+\toprule
+\textbf{Végpont} & \textbf{Metódus} & \textbf{Funkció} \\
+\midrule
+\path{/api/users} & POST & Új felhasználó létrehozása. \\[4pt]
+\path{/api/users/{id}} & \shortstack[l]{PUT\\DELETE} & Felhasználó szerkesztése, törlése. \\[4pt]
+\path{/api/users/{id}/suspend} & POST & Felhasználó felfüggesztése (\texttt{active = 0}). \\[4pt]
+\path{/api/users/{id}/unsuspend} & POST & Felhasználó visszaaktiválása (\texttt{active = 1}). \\[4pt]
+\bottomrule
+\end{longtable}
+\normalsize
+
+\subsection{Válasz- és hibakezelési elvek}
+A rendszerben tipikusan az alábbi státuszkódok jelennek meg:
+\begin{itemize}
+  \item \textbf{200/201}: sikeres lekérés vagy létrehozás;
+  \item \textbf{401}: hitelesítési hiba (érvénytelen vagy hiányzó token);
+  \item \textbf{403}: jogosultsági hiba (nem megfelelő szerepkör vagy tulajdon);
+  \item \textbf{404}: nem létező erőforrás vagy hibás összerendelés;
+  \item \textbf{422}: validációs hiba (pl. duplikált név vagy pozíció).
+\end{itemize}
+
+\chapter{Rendszerterv a Cellauto projekthez}
+
+\section{A rendszer célja és hatóköre}
+A rendszer célja, hogy a sejtautomata alkalmazásban külön kezelhető legyen az adminisztrációs és a végfelhasználói használat. Az admin felület biztosítja az adatok menedzselését (felhasználók, szólisták, paletták), a \texttt{www} felület pedig a konkrét játék/szimulációs használatot adja. A backend mindkét irányból konzisztens API-t nyújt.
+
+A funkcionális hatókör egyik legfontosabb eleme a hozzáférési szintek differenciálása. A dokumentumok alapján a színek publikusabb jellegű erőforrásokként értelmezhetők, míg a személyes szólisták és mentések felhasználói kontextushoz kötöttek.
+
+\section{Szerepkör- és jogosultsági modell}
+Az admin dokumentáció négy szerepkört nevez meg: \texttt{vendeg}, \texttt{diak}, \texttt{tanar}, \texttt{admin}. A kritikus adminisztrációs műveletek kizárólag \texttt{admin} szerepkörrel érhetők el. Nem admin felhasználónál a kliens explicit jogosultsági üzenetet jelenít meg, és nem tölti be a tiltott menedzsment funkciókat.
+
+A szerveroldali ellenőrzés elsődleges: a middleware réteg akadályozza meg, hogy kliensoldali korlátozás megkerülésével jogosulatlan CRUD művelet történjen.
+
+\section{Részletes funkcionális követelmények}
+\subsection{Autentikáció és session kezelés}
+A rendszer \texttt{POST /api/login} végponttal hitelesít email vagy felhasználónév + jelszó kombinációval. Sikeres hitelesítés után a kliens token- és user-objektumot tárol. Oldalfrissítésnél ezek alapján automatikus visszaállás történik. Profilfrissítésre \texttt{GET /api/user} szolgál.
+
+\subsection{Felhasználókezelés}
+Az admin modul követelményei közé tartozik a felhasználók listázása, keresése, létrehozása, szerkesztése, törlése, felfüggesztése és visszaaktiválása. Kiemelt elvárás, hogy ha az admin a saját profilját módosítja, a kliens globális auth állapota azonnal szinkronba kerüljön.
+
+\subsection{Szólisták kezelése}
+A szólistákhoz kapcsolódó követelmények nem csak egyszerű CRUD műveletek. A dokumentáció alapján támogatni kell a tömeges szóbevitelt, tokenizálást, duplikátumszűrést, valamint a stabil sorrendkezelést. Drag-and-drop sorrendezésnél a kliensnek figyelnie kell a keresési állapotra és szerkesztési lockra.
+
+\subsection{Színlisták kezelése}
+A színek kezelése a szólistákéhoz hasonló, de fontos különbség, hogy a felvitel előre definiált palettából történik. A felhasználó nem tetszőleges színkódot gépel be alapfolyamatban, hanem kattintással választ. A sorrendképzés itt is pozícióalapú és egyediség-korlátokkal védett.
+
+\subsection{Táblaállapot mentések}
+A board-save modul célja, hogy a felhasználó csoportokban tárolhassa a táblaállapotokat JSON payload formában. A payload mező a sejtautomata konfiguráció és cellaállapotok visszaállítására szolgál. A csoporton belüli mentésnév egyedi, és a rekordok tulajdonjoga felhasználóhoz kötött.
+
+\section{Nem-funkcionális követelmények}
+\begin{itemize}
+  \item \textbf{Biztonság:} tokenes hitelesítés, szerepkör alapú admin védelem, tulajdonosi ellenőrzés mentések és listák esetén.
+  \item \textbf{Konzisztencia:} DB egyedi kulcsok és FK kapcsolatok betartása, kliensoldali ütközéskezelés reorder műveleteknél.
+  \item \textbf{Használhatóság:} magyar nyelvű UI, egyértelmű hibaüzenetek, valós idejű visszajelzés műveletekről.
+  \item \textbf{Karbantarthatóság:} dokumentált végpontok, migrációalapú sémaevolúció, verziózott implementációs terv.
+\end{itemize}
+
+\section{UML diagramok}\label{sec:uml-diagramok}
+Az UML nézetben a backend adatmodell szerkezete és fő összekapcsolásai láthatók: a felhasználó-központú domain táblák (szólisták, színlisták, mentési csoportok és mentések) relációi. Az ábra célja, hogy a backend perzisztencia-réteg logikai felépítése gyorsan áttekinthető legyen.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.92\textwidth]{logika.png}
+\caption{Adatbázis UML diagram: táblák, mezők és kapcsolataik a backend rendszerben}
+\end{figure}
+
+\section{Adatbázis-felépítés és magyarázat}
+Az adatbázis-terv célja kettős: egyrészt biztosítani az adatok logikai konzisztenciáját, másrészt támogatni a gyors és egyértelmű API-műveleteket. A modellben a legtöbb üzleti entitás felhasználóhoz kötött, ezért a tulajdonosi relációk kiemelt szerepet kapnak.
+
+A backend dokumentáció (\texttt{database-uml}, \texttt{kovetelmenyspecifikacio-adatbazis}, \texttt{kovetelmenyspecifikacio-tablamentesek}) alapján a relációs modell központi eleme a \texttt{users} tábla: ehhez kapcsolódnak 1:N viszonyban a szólisták (\texttt{lists}/\texttt{words}), a színpaletták (\texttt{color\_lists}/\texttt{colors}), illetve a táblaállapot-mentések (\texttt{board\_save\_groups}/\texttt{board\_saves}). A \texttt{board\_saves} tábla egyszerre hivatkozik a felhasználóra és a mentési csoportra, ami egyszerre támogatja a jogosultsági szűrést és a referenciális integritást.
+
+Az adatbázis-követelmények szerint a domain táblák mellett infrastruktúra táblák is futnak a backendben (\texttt{personal\_access\_tokens}, \texttt{sessions}, \texttt{jobs}, \texttt{failed\_jobs}, \texttt{cache} stb.). Ezek nem üzleti entitások, de a rendszer működéséhez szükségesek: különösen a \texttt{personal\_access\_tokens} tábla biztosítja a Sanctum alapú Bearer-token hitelesítést.
+
+\subsection{Fő táblák}
+\begin{longtable}{>{\raggedright\arraybackslash}p{0.24\textwidth}>{\raggedright\arraybackslash}p{0.68\textwidth}}
+\toprule
+\textbf{Tábla} & \textbf{Szerep és főbb mezők} \\
+\midrule
+\texttt{users} & Felhasználói törzs: \texttt{id}, \texttt{username}, \texttt{email}, \texttt{role}, \texttt{active}, \texttt{suspended\_at}. \\
+\texttt{lists} & Felhasználó szólistái: \texttt{id}, \texttt{user\_id}, \texttt{name}. \\
+\texttt{words} & Listaelemek: \texttt{id}, \texttt{list\_id}, \texttt{word}, \texttt{position}. \\
+\texttt{color\_lists} & Felhasználó színpaletta-listái: \texttt{id}, \texttt{user\_id}, \texttt{name}. \\
+\texttt{colors} & Palettaelemek: \texttt{id}, \texttt{list\_id}, \texttt{color}, \texttt{position}. \\
+\texttt{board\_save\_groups} & Mentési csoportok: \texttt{id}, \texttt{user\_id}, \texttt{name}, \texttt{position}. \\
+\texttt{board\_saves} & Csoporton belüli mentések: \texttt{id}, \texttt{user\_id}, \texttt{board\_save\_group\_id}, \texttt{name}, \texttt{payload}. \\
+\bottomrule
+\end{longtable}
+
+\subsection{Kapcsolatok és integritási szabályok}
+\begin{itemize}
+  \item Egy felhasználóhoz több szólista, több színlista és több mentési csoport tartozhat (1:N kapcsolatok).
+  \item Egy szólistához több szó tartozik; egy színlistához több szín tartozik.
+  \item Egy mentési csoporthoz több board-mentés tartozhat.
+  \item A \texttt{board\_save\_groups} és \texttt{board\_saves} kapcsolatoknál CASCADE törlés biztosítja, hogy ne maradjon árva rekord.
+  \item A \texttt{board\_saves} rekordoknál a csoport- és felhasználó-kapcsolat együttesen érvényesül: csoporton kívüli vagy idegen mentés elérése API-szinten tiltott.
+\end{itemize}
+
+\subsection{Egyedi kulcsok és üzleti indoklás}
+\begin{itemize}
+  \item \texttt{users.email} és \texttt{users.username} egyedi, így nincs azonos bejelentkezési azonosító.
+  \item \texttt{words(list\_id, word)} egyedi: ugyanaz a szó ugyanabban a listában nem szerepelhet többször.
+  \item \texttt{words(list\_id, position)} egyedi: a megjelenítési sorrend stabil és ütközésmentes.
+  \item \texttt{colors(list\_id, position)} egyedi: a paletta sorrendje jól definiált.
+  \item \texttt{board\_saves(board\_save\_group\_id, name)} egyedi: egy csoporton belül nem lehet két azonos nevű mentés.
+  \item A mentési payload JSON típusú: a backend strukturált objektum/tömb alapú állapotképeket tud eltárolni.
+\end{itemize}
+
+\subsection{Miért jó ez a séma a gyakorlatban?}
+A séma egyik legnagyobb előnye, hogy egyszerre támogatja a felhasználói adatelválasztást és a szerkesztési műveletek konzisztenciáját. A sorrendalapú listák (\texttt{words}, \texttt{colors}) esetén a pozíció egyediség miatt a kliensoldali rendezés sem tud csendes adatinkonzisztenciát okozni. A mentési modulban a JSON payload tárolás rugalmasságot ad, miközben a csoport- és névszintű egyediség biztosítja az átlátható felhasználói szervezést.
+
+\subsection{Táblák mezőszintű részletezése}
+\subsubsection*{users}
+\begin{longtable}{>{\raggedright\arraybackslash}p{0.24\textwidth}>{\raggedright\arraybackslash}p{0.16\textwidth}>{\raggedright\arraybackslash}p{0.54\textwidth}}
+\toprule
+\textbf{Mező} & \textbf{Típus} & \textbf{Jelentés} \\
+\midrule
+\texttt{id} & bigint, PK & Egyedi felhasználó-azonosító. \\
+\texttt{username} & varchar(255), UNIQUE & Bejelentkezéshez használható egyedi név. \\
+\texttt{name} & varchar(255) & Megjelenített teljes név. \\
+\texttt{email} & varchar(255), UNIQUE & Egyedi email cím. \\
+\texttt{role} & varchar(255) & Szerepkör: vendeg, diak, tanar, admin. \\
+\texttt{active} & tinyint(1) & Aktív státusz (1/0). \\
+\texttt{suspended\_at} & timestamp, NULL & Felfüggesztés időpontja. \\
+\texttt{email\_verified\_at} & timestamp, NULL & Email megerősítés ideje. \\
+\texttt{password} & varchar(255) & Hash-elt jelszó. \\
+\texttt{remember\_token} & varchar(100), NULL & Emlékezz rám token. \\
+\texttt{created\_at}, \texttt{updated\_at} & timestamp, NULL & Létrehozási és módosítási időpontok. \\
+\bottomrule
+\end{longtable}
+
+\subsubsection*{lists}
+\begin{longtable}{>{\raggedright\arraybackslash}p{0.24\textwidth}>{\raggedright\arraybackslash}p{0.16\textwidth}>{\raggedright\arraybackslash}p{0.54\textwidth}}
+\toprule
+\textbf{Mező} & \textbf{Típus} & \textbf{Jelentés} \\
+\midrule
+\texttt{id} & bigint, PK & Lista azonosító. \\
+\texttt{user\_id} & bigint, FK & Tulajdonos felhasználó (\texttt{users.id}). \\
+\texttt{name} & varchar(255) & Lista neve. \\
+\texttt{created\_at}, \texttt{updated\_at} & timestamp, NULL & Audit mezők. \\
+\bottomrule
+\end{longtable}
+
+\subsubsection*{words}
+\begin{longtable}{>{\raggedright\arraybackslash}p{0.24\textwidth}>{\raggedright\arraybackslash}p{0.16\textwidth}>{\raggedright\arraybackslash}p{0.54\textwidth}}
+\toprule
+\textbf{Mező} & \textbf{Típus} & \textbf{Jelentés} \\
+\midrule
+\texttt{id} & bigint, PK & Szó rekord azonosító. \\
+\texttt{list\_id} & bigint, FK & Hivatkozás a szülő listára. \\
+\texttt{word} & varchar(255) & Tárolt szóérték. \\
+\texttt{position} & int unsigned & Listahely/sorrend. \\
+\texttt{created\_at}, \texttt{updated\_at} & timestamp, NULL & Audit mezők. \\
+\bottomrule
+\end{longtable}
+
+\subsubsection*{color\_lists és colors}
+\begin{longtable}{>{\raggedright\arraybackslash}p{0.24\textwidth}>{\raggedright\arraybackslash}p{0.16\textwidth}>{\raggedright\arraybackslash}p{0.54\textwidth}}
+\toprule
+\textbf{Mező} & \textbf{Típus} & \textbf{Jelentés} \\
+\midrule
+\texttt{color\_lists.id} & bigint, PK & Színlista azonosító. \\
+\texttt{color\_lists.user\_id} & bigint, FK & Tulajdonos felhasználó. \\
+\texttt{color\_lists.name} & varchar(255) & Színlista neve. \\
+\texttt{colors.id} & bigint, PK & Színrekord azonosító. \\
+\texttt{colors.list\_id} & bigint, FK & Szülő színlistára hivatkozás. \\
+\texttt{colors.color} & varchar(50) & Színkód (tipikusan hex). \\
+\texttt{colors.position} & int & Sorrend a listán belül. \\
+\bottomrule
+\end{longtable}
+
+\subsubsection*{board\_save\_groups és board\_saves}
+\begin{longtable}{>{\raggedright\arraybackslash}p{0.32\textwidth}>{\raggedright\arraybackslash}p{0.16\textwidth}>{\raggedright\arraybackslash}p{0.46\textwidth}}
+\toprule
+\textbf{Mező} & \textbf{Típus} & \textbf{Jelentés} \\
+\midrule
+\path{board_save_groups.id} & bigint, PK & Mentési csoport azonosító. \\
+\path{board_save_groups.user_id} & bigint, FK & Tulajdonos felhasználó (CASCADE törléssel). \\
+\path{board_save_groups.name} & varchar(255) & Csoportnév. \\
+\path{board_save_groups.position} & int unsigned, NULL & Csoport sorrend. \\
+\path{board_saves.id} & bigint, PK & Mentés azonosító. \\
+\path{board_saves.user_id} & bigint, FK & Tulajdonos felhasználó. \\
+\path{board_saves.board_save_group_id} & bigint, FK & Szülő csoport azonosító. \\
+\path{board_saves.name} & varchar(255) & Mentés neve (csoporton belül egyedi). \\
+\path{board_saves.payload} & json & Teljes táblaállapot és metaadatok. \\
+\path{created_at} & timestamp, NULL & Létrehozás időpontja. \\
+\path{updated_at} & timestamp, NULL & Módosítás időpontja. \\
+\bottomrule
+\end{longtable}
+
+\chapter{Saját szoftver megvalósítása (Cellauto)}
+
+\section{Backend implementációs szerkezet}
+A backendben az API útvonalak a \texttt{routes/api.php} fájlban szervezettek, kontroller-alapú feldolgozással. A dokumentációban hivatkozott \texttt{AuthController}, \texttt{BoardSaveGroupController} és \texttt{BoardSaveController} moduláris bontást jelez. A middleware lánc (\texttt{auth:sanctum}, \texttt{admin}) világosan elválasztja a publikus, hitelesített és adminisztrátori végpontokat.
+
+A modellekhez tartozó relációk fontos szerepet kapnak: lista-szavak és paletta-színek lekérése rendezett kapcsolatokkal történik, ami egyszerűsíti a frontend renderelést.
+
+\section{Admin frontend implementáció}
+Az admin felületben az autentikációs folyamat első lépése a login űrlap. Sikeres hitelesítés után a rendszer három fő adminisztrációs nézetre bontva működik: felhasználók, szólisták és színlisták. A felhasználókezelésben a rekordok szerkeszthetők, a név, email cím, szerepkör és állapot módosítható, valamint a felhasználók inaktiválása és újraaktiválása is elérhető.
+
+A szólista modulban listanév adható meg, majd a listán belüli szavak sorrendje szerkeszthető. Ez a sorrend kapcsolható a különböző generációs megjelenítésekhez, ezért a rendezés konzisztenciája kulcsfontosságú. A szólisták felhasználóhoz rendelt erőforrások: minden felhasználó a saját listáit kezeli.
+
+A színlista modulban szintén névvel ellátott listák kezelhetők, a színek sorrendje pedig a generációk vizuális színezését határozza meg. A színlisták globális erőforrásként működnek, így minden felhasználó számára elérhetők, létrehozásuk és szerkesztésük adminisztrátori feladathoz tartozik.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.92\textwidth]{admin users.png}
+\caption{Admin felület: felhasználók kezelése}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.92\textwidth]{admin szavak.png}
+\caption{Admin felület: szólisták és szavak szerkesztése}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.92\textwidth]{admin szinek.png}
+\caption{Admin felület: színlisták és színsorrend kezelése}
+\end{figure}
+
+\section{Szólista modul részletei}
+A szólista létrehozásnál a felhasználó egyszerre adhat meg lista-nevet és kezdeti szókészletet. A kliens a bemeneti szöveget szóköz/sortörés mentén darabolja, kiszűri a duplikátumokat és sorban tölti fel az API-n keresztül pozíció alapú beszúrással.
+
+A rendezés mentése kritikus pont. Mivel a backendben \texttt{(list\_id, position)} egyediség van, közvetlen csereütközés előfordulhat. Ezért az admin megoldás kétfázisú átpozicionálást alkalmaz: ideiglenes magas bázisra emel, majd végleges 0..n-1 pozícióra állít.
+
+\section{Színlista modul részletei}
+A színkezelés a dokumentáció alapján hasonló műveleti modellt használ, de a UX specializált: előre definiált hex palettából történik a választás. Új lista készítésénél és meglévő lista bővítésénél várakozó sor kezelése történik (hozzáadás, visszavonás, törlés), majd tömbösített API művelet fut.
+
+Szerkesztéskor az admin felület azonnali mentést végez kattintásra, így a felhasználó gyors visszajelzést kap. A listasorrend itt is pozícióalapú, ezért az ütközéselkerülő mentési stratégia megegyezik a szólistáknál alkalmazott megoldással.
+
+\section{Board save modul implementációs szempontjai}
+A board mentések két entitásra épülnek: csoport és mentés. A mentés payload JSON, amely képes táblatípus, szomszédsági mód, futási mód és cellaállapot adatok tárolására. A jelen implementációban a payload szerkezeti validációja kötelező, a belső mezők részletes tartalmi validációja pedig fejleszthető terület.
+
+A csoporthoz kötött név-egyediség lehetővé teszi, hogy ugyanaz a mentésnév külön csoportban előfordulhasson, ami praktikus felhasználói szervezést biztosít.
+
+\section{Adatbázis-terv és relációk alkalmazása}
+A rendszer adatbázisában az idegen kulcsok tudatosan biztosítják a tulajdonosi és hierarchikus konzisztenciát. Például a \texttt{board\_save\_groups} és \texttt{board\_saves} táblákban a CASCADE törlés garantálja, hogy felhasználó vagy csoport törlésekor ne maradjanak árva rekordok.
+
+A \texttt{words} és \texttt{colors} táblák pozícióegyedisége konzisztens listakezelést tesz lehetővé, ugyanakkor a kliensoldali implementációt körültekintővé teszi reorder esetén.
+
+\chapter{Tesztelés és verifikáció}
+
+\section{Tesztelési stratégia}
+A dokumentációk és implementációs terv alapján a tesztelés három szinten értelmezhető:
+\begin{enumerate}
+  \item API funkcionális ellenőrzés (auth, jogosultság, CRUD);
+  \item integrációs ellenőrzés frontend és backend között;
+  \item regresszióvédelem automatizált futtatással (\texttt{composer run test}).
+\end{enumerate}
+
+A stratégia központi célja, hogy a dokumentált viselkedés és a tényleges implementáció ne térjen el tartósan egymástól.
+
+\section{API tesztesetek}
+Az ellenőrzések fő csoportjai:
+\begin{itemize}
+  \item sikeres és sikertelen bejelentkezés (401/403 ágak);
+  \item token nélküli hozzáférés tiltása védett végpontokon;
+  \item admin végpontok tiltása nem admin felhasználóval;
+  \item listák/színek saját tulajdon szerinti szűrése;
+  \item board save jogosultsági és összetartozási hibák (403/404).
+\end{itemize}
+
+\section{Frontend-integrációs tesztelés}
+Admin oldalon külön validálandó a helyes állapotkezelés: login/logout flow, localStorage szinkron, szerkesztési formok és hibaüzenetek megjelenése. Szó- és színlistáknál a sorrendezés, keresés, in-line szerkesztés és tömeges hozzáadás együttese adja a legnagyobb regressziós kockázatot.
+
+A \texttt{www} oldalnál a vegyes hozzáférési modell ellenőrzése kritikus: bejelentkezés nélkül is működő publikus nézet, bejelentkezve pedig bővített funkcionalitás (pl. szólista-elérés, mentések).
+
+\section{Dokumentáció-kód eltérések kezelése}
+A projektben külön figyelmet igényel, hogy a specifikációk és a tényleges implementáció mindig szinkronban maradjanak. Bizonyos pontokon előfordulhat átmeneti eltérés (például részleges frissítés támogatása egy adott modulban), ezért a tesztelés során explicit traceability ellenőrzés szükséges: minden funkcióhoz rögzíteni kell, hogy adott verzióban mi az elvárt viselkedés.
+
+\chapter{Eredmények és kiértékelés}
+
+\section{Eredmények összegzése}
+A dokumentációk alapján kialakított architektúra több fontos minőségi célt teljesít:
+\begin{itemize}
+  \item elkülönített felelősség a frontend és backend között;
+  \item egységes autentikációs modell Sanctum tokenekkel;
+  \item szerepkör alapú admin jogosultság;
+  \item perzisztens, relációsan védett listakezelés és mentési struktúra;
+  \item bővíthető API-szerződés további fejlesztési fázisokhoz.
+\end{itemize}
+
+A rendszer erőssége, hogy egyszerre szolgál adminisztrációs és végfelhasználói célokat, miközben a központi üzleti logika egy helyen marad.
+
+\section{Kockázatok és fejlesztési lehetőségek}
+A dokumentált kockázatok közül kiemelt:
+\begin{itemize}
+  \item validációk és hibaformátumok további egységesítése;
+  \item nagy payload méretű mentések listázási optimalizálása;
+  \item board-save részleges frissítés API-jának finomítása;
+  \item reorder műveletekhez dedikált batch endpointok bevezetése.
+\end{itemize}
+
+Ezek kezelése az implementációs terv fázisai szerint ütemezhető, így a projekt fokozatosan javítható anélkül, hogy a már működő klienseket destabilizálná.
+
+\chapter{Konklúzió}
+
+\section{Összegzés}
+A szakdolgozat harmadik fejezetétől újragondolt tartalom a Cellauto valós rendszerdokumentációjára épül. A bemutatott technológiai és rendszertervi megoldások alapján a projekt jól strukturált, gyakorlatban használható webes ökoszisztémát alkot: adminisztrációs felület, végfelhasználói felület és stabil REST backend együttese.
+
+A rendszer külön erőssége a hozzáférési modell rugalmassága, az adatintegritást biztosító relációs tervezés, valamint a funkcionálisan gazdag admin modul (felhasználó-, szólista-, színlista- és mentéskezelés).
+
+\section{Jövőbeli irányok}
+A továbblépés fő irányai a dokumentációk alapján:
+\begin{itemize}
+  \item egységesebb backend validáció Form Request osztályokkal;
+  \item standardizált hiba-válasz szerkezet minden végponton;
+  \item board-save payload séma mélyebb szerveroldali ellenőrzése;
+  \item teljesítményoptimalizálás nagy listák és mentések esetére;
+  \item frontend oldali automata integrációs tesztek bővítése.
+\end{itemize}
+
+Ezek megvalósításával a Cellauto rendszer nemcsak oktatási, hanem magasabb terhelésű, hosszabb távon fenntartható környezetben is megbízhatóan üzemeltethető.
+
+\end{document}

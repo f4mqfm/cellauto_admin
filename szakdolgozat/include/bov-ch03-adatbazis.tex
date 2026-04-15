@@ -1,0 +1,57 @@
+\chapter{Adatbázis tervezés és felépítés}
+
+\section{Globális megközelítés}
+A perzisztencia réteg célja a felhasználók, a felhasználóhoz kötött szó- és színpaletták, valamint a táblaállapot-mentések tárolása \emph{referenciális integritással}. A tipikus éles környezet \textbf{InnoDB} motort és \textbf{utf8mb4} karakterkészletet használ; fejlesztéshez gyakori az SQLite. A részletes \texttt{CREATE TABLE} szövegek a \texttt{api/docs/database-schema.md} fájlban találhatók — itt a logikai szerkezet és a kulcsok összefoglalója szerepel.
+
+\section{Üzleti táblák áttekintése}
+\begin{longtable}{@{}p{3.2cm}p{10.5cm}@{}}
+\toprule
+\textbf{Tábla} & \textbf{Szerep és fő mezők} \\
+\midrule
+\endfirsthead
+\multicolumn{2}{c}{\tablename\ \thetable{} — folytatás} \\
+\toprule
+\textbf{Tábla} & \textbf{Szerep és fő mezők} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{2}{r}{Folytatódik a következő oldalon\ldots} \\
+\endfoot
+\bottomrule
+\endlastfoot
+
+\texttt{users} &
+Elsődleges kulcs \texttt{id}. Egyedi \texttt{email} és \texttt{username}. Mezők: \texttt{name}, \texttt{password} (hash), \texttt{role} (pl. \texttt{vendeg}, \texttt{diak}, \texttt{tanar}, \texttt{admin}), \texttt{active}, \texttt{suspended\_at}, \texttt{email\_verified\_at}, időbélyegek. A bejelentkezés tiltása felfüggesztett vagy inaktív állapotban történik. \\
+
+\texttt{lists} &
+Felhasználói szólisták konténere: \texttt{user\_id} $\rightarrow$ \texttt{users.id}, \texttt{name}. Egy felhasználóhoz több lista (1:N). \\
+
+\texttt{words} &
+Listaelemek: \texttt{list\_id} $\rightarrow$ \texttt{lists.id}, \texttt{word} (max 255), \texttt{position} ($\geq 0$). \textbf{Egyediség:} \texttt{UNIQUE(list\_id, word)} és \texttt{UNIQUE(list\_id, position)} — ez indokolja az admin kliens kétlépcsős pozíció-frissítését cserekor. \\
+
+\texttt{color\_lists} &
+Színpaletta-listák: \texttt{user\_id}, \texttt{name}. \\
+
+\texttt{colors} &
+Egy paletta színei: \texttt{list\_id} $\rightarrow$ \texttt{color\_lists.id}, \texttt{color} (string, tipikusan hex), \texttt{position}. \textbf{Egyediség:} \texttt{UNIQUE(list\_id, position)}. \\
+
+\texttt{board\_save\_groups} &
+Mentési mappák: \texttt{user\_id} $\rightarrow$ \texttt{users.id} (\textbf{ON DELETE CASCADE}), \texttt{name}, opcionális \texttt{position} a megjelenítési sorrendhez. \\
+
+\texttt{board\_saves} &
+Konkrét mentés: \texttt{board\_save\_group\_id} $\rightarrow$ \texttt{board\_save\_groups.id} (\textbf{CASCADE}), \texttt{user\_id} $\rightarrow$ \texttt{users.id} (\textbf{CASCADE}), \texttt{name}, \texttt{payload} (JSON, NOT NULL). \textbf{Egyediség:} \texttt{UNIQUE(board\_save\_group\_id, name)}. \\
+\end{longtable}
+
+\section{ER és UML}
+A \texttt{api/docs/database-uml.md} Mermaid és PlantUML diagramokat tartalmaz; a lényegi üzenet: a \texttt{User} központi entitás, amelyhez a listák, színes listák és mentési csoportok csatlakoznak; a \texttt{BoardSave} kettős kapcsolatot mutat (user + csoport) a gyors jogosultság-ellenőrzés és az integritás miatt.
+
+\section{Laravel infrastruktúra táblák}
+Az alkalmazás működéséhez további táblák szükségesek (nem üzleti domain):
+\texttt{migrations}, \texttt{sessions}, \texttt{cache}, \texttt{cache\_locks}, \texttt{jobs}, \texttt{job\_batches}, \texttt{failed\_jobs}, \texttt{password\_reset\_tokens}, \texttt{personal\_access\_tokens}.
+Utóbbi tárolja a Sanctum API tokeneket; enélkül a Bearer hitelesítés nem működik.
+
+\section{Nem funkcionális szempontok (adat)}
+\begin{itemize}
+  \item A \texttt{board\_saves.payload} nagy lehet — lista lekérdezéskor a jelen backend a teljes payloadot is visszaadja minden mentéshez (lásd követelmény-specifikáció az eltérésről az \texttt{api-board-saves.md} javaslatához képest).
+  \item JSON típus: MySQL/MariaDB natív JSON; SQLite fejlesztői módban Laravel kompatibilitást biztosít.
+\end{itemize}

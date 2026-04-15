@@ -1,0 +1,91 @@
+\mainmatter
+
+\chapter{Bevezetés és célkitűzés}
+
+\section{Motiváció}
+A diszkrét matematika és az algoritmusok oktatásában a sejtautomaták (\emph{cellular automata}) kitűnő példák arra, hogyan vezetnek egyszerű, lokálisan értelmezett szabályok emergens, globálisan érdekes mintázatokhoz. A hallgatók számára a tananyag akkor hatékony, ha nem csupán definíciókat olvasnak, hanem \emph{kísérleteznek}: különböző kezdeti feltételeket állítanak elő, összehasonlítják a szomszédsági módokat, és vizuálisan követik a generációkat.
+
+\section{Indoklás — összhang a szakdolgozati témaválasztó adatlappal}
+A hallgató (\textbf{Borsos László}, azonosító: \textbf{F4MQFM}) a \emph{Szakdolgozati témaválasztó adatlap} kitöltésével formálisan vállalta a szakdolgozat témáját és annak megvalósítását. Az adatlap célja, hogy a téma \emph{szakmai indokoltsága}, \emph{megvalósíthatósága} és \emph{kapcsolata a képzéshez} egy adminisztratív keretben is visszakövethető legyen; az alábbiak ezt az indoklást egészítik ki részletesen, a \texttt{\TemaValasztoUt\TemaValasztoPdf} dokumentummal összhangban.
+
+\subsection{Miért választottam ezt a témát?}
+A sejtautomaták nem csupán matematikai érdekességek: a lokális szabályok és a globális mintázatok viszonya közvetlenül kapcsolódik az informatikus képzésben tanult \emph{absztrakcióhoz}, \emph{állapottér-modellezéshez} és \emph{algoritmusok helyességének gondolatmenetéhez}. Egy interaktív, böngészőben futó alkalmazás készítése lehetővé teszi, hogy a téma ne maradjon „papíron”, hanem \emph{működő szoftverként} jelenjen meg — ez illeszkedik a programtervező / szoftverfejlesztő kompetenciák gyakorlati kimeneteléhez.
+
+\subsection{Szakmai és képzési relevancia}
+A megvalósított rendszer teljes értékű \emph{háromrétegű webes architektúrát} fedi le:
+\begin{itemize}
+  \item \textbf{Kliens (www):} felhasználói élmény, eseményvezérelt logika, vizualizáció;
+  \item \textbf{Kliens (admin):} típusbiztos SPA, komponensalapú felület, REST integráció;
+  \item \textbf{Szerver (api):} erőforrás-orientált végpontok, ORM, migrációk, autentikáció és jogosultság.
+\end{itemize}
+Ezek együttesen a mintatanterv \emph{webes programozás}, \emph{adatbázisok}, \emph{szoftvertechnológia} és \emph{projektszerű fejlesztés} kompetenciáival igazolható összhangban vannak.
+
+\subsection{Oktatási és felhasználói hasznosság}
+A Cellauto elsődleges célcsoportja a \emph{oktatás}: tanár demonstrációhoz és diák önálló kísérletezéshez egyaránt alkalmas. A szólisták és színpaletták API-n keresztüli kezelése lehetővé teszi, hogy a tantárgyi kontextus (pl. idegen nyelv szavai, színek jelentése) ne legyen beégetve a programba, hanem dinamikusan bővíthető legyen. A táblaállapot-mentések révén a tanóra vagy házi feladat \emph{reprodukálható pillanatképei} visszatölthetők, ami erősíti a módszertani minőséget.
+
+\subsection{Technológiai és piaci indoklás}
+A választott technológiai stack (Laravel, Sanctum, React/TypeScript, böngészős JavaScript) iparági szempontból is releváns: a hallgató olyan eszközöket ismer meg, amelyekkel a későbbi munkahelyi környezetben is találkozhat. A REST API és az adatbázis-integritás (idegen kulcsok, egyediségi kényszerek) explicit kezelése bizonyítja, hogy a téma nem „egyszerű weblap-készítés”, hanem \emph{szerver oldali felelősséggel} is járó fejlesztés.
+
+\subsection{Személyes motiváció és tanulási cél}
+A téma lehetőséget ad arra, hogy a hallgató a matematikai tartalom iránti érdeklődését összekapcsolja a gyakorlati fejlesztéssel: a szimuláció helyes működése, a mentések sémaszerződése és az admin felület ergonómiája egyszerre jelentenek \emph{technikai kihívást} és \emph{pedagógiai értéket}. A F4MQFM azonosítóval rögzített témaválasztás így nem csupán adminisztratív lépés, hanem a szakmai fejlődés egyik mérföldköve.
+
+\subsection{Kockázatok és vállalás}
+A téma vállalása azt is jelenti, hogy a dokumentáció, a tesztelés és a biztonsági szempontok (token tárolás, jogosultságok) mellett a \emph{felhasználói minőséget} is figyelembe kell venni. A szakdolgozat ezeket a kérdéseket külön fejezetekben tárgyalja, és a továbbfejlesztési irányokban összegzi.
+
+\section{A fejlesztés tárgya}
+A Cellauto rendszer három komponense együtt egy teljes webes ökoszisztémát ad:
+\begin{itemize}
+  \item \textbf{\texttt{www}} — böngészőben futó sejtautomata-szimulátor oktatási célú vezérlőkkel;
+  \item \textbf{\texttt{api}} — központi perzisztencia és üzleti szabályok (Laravel, JSON REST, Sanctum tokenes hitelesítés);
+  \item \textbf{\texttt{admin}} — React alapú belső felület a felhasználók és a tartalomlisták (szavak, színek) kezelésére.
+\end{itemize}
+
+\section{Célkitűzés}
+\begin{itemize}
+  \item A három komponens \emph{szétválasztott} telepíthetősége és a közös API-szerződés dokumentálása.
+  \item Felhasználóhoz kötött szó- és színpaletták, valamint táblaállapot-mentések biztosítása.
+  \item A rendszer \emph{egy helyen összefoglalt} szakdolgozat-szintű leírása, beleértve az adatbázis felépítését és az összes implementált REST végpontot.
+\end{itemize}
+
+\section{A dolgozat határa}
+A dolgozat nem helyettesíti a forráskódot: a viselkedés részletei eltérhetnek a dokumentációtól, amíg a kódot nem frissítik. Az intézményi \emph{feladatkiírás} és a témaválasztó adatlap \emph{rövid, űrlapon szereplő szövegei} (ha a formai szabályzat előírja) a beadási csomag részeként külön is csatolandók; a jelen PDF a téma választását igazolja, a dolgozat pedig a megvalósítás és a dokumentáció részleteit adja.
+
+\chapter{Irodalomkutatás és elméleti háttér}
+
+\section{Sejtautomata fogalma}
+Sejtautomatán olyan diszkrét modellt értünk, amelyben
+\begin{enumerate}
+  \item van egy cellák halmaza (rács, pl. négyzetes vagy hexagonális),
+  \item minden cellának van egy állapota egy véges halmazból,
+  \item az idő diszkrét lépésekben halad,
+  \item a következő állapot minden cellára \emph{csak a szomszédok (és esetleg a cella maga) aktuális állapotától} függ, ugyanazon szabály szerint.
+\end{enumerate}
+A szinkron frissítés azt jelenti, hogy a $t\rightarrow t{+}1$ lépésben minden cella ugyanabból a $t$-időbeli konfigurációból számítódik.
+
+\section{Szomszédságok és dimenzió}
+Egydimenziós automaták esetén tipikusan a cella és a bal/jobb szomszéd alkot szomszédságot; kétdimenzióban megkülönböztethető \emph{oldalsó} (von Neumann), \emph{csúcs} vagy \emph{oldal+csúcs} (Moore) szomszédság, illetve hexagonális rácson más topológia. A vizsgált alkalmazás több, oktatói szempontból értelmes módot kínál, hogy a hallgató összehasonlíthassa a viselkedést.
+
+\section{Stephen Wolfram elemi automatái (emlékeztető)}
+Az egydimenziós, kétállapotú, 3 cella széles szomszédságot használó elemi automaták 256 szabálya közismert osztályozása (homogén, periodikus, kaotikus, komplex viselkedés) jól illusztrálja, hogy \emph{minimális} változtatás a szabályban milyen drámai változást okozhat a globális dinamikában. Ez oktatási szempontból motiválja a „szabályváltás” kísérletezés fontosságát — a Cellauto kétdimenziós és hex esetei ehhez hasonló intuíciót építenek, más geometriában.
+
+\section{Conway Életjátéka}
+A klasszikus \emph{Game of Life} négyzetes rácson, Moore-szomszédsággal és két állapottal (élő/halott) a legegyszerűbb példa a emergens struktúrákra (glider, oszcillátorok). A Cellauto többállapotú, több színnel és szinttel bővíti a lehetőségeket, így közelebb áll az olyan oktatási célú általánosításokhoz, ahol a cella „szintje” vagy színe tantárgyi tartalomhoz kötődik.
+
+\section{Oktatási és demonstrációs alkalmazások}
+A szimulátorok a következő pedagógiai célokat szolgálhatják:
+\begin{itemize}
+  \item a \emph{lokális szabály $\rightarrow$ globális minta} gondolatmenet illusztrálása;
+  \item a \emph{determinizmus és reprodukálhatóság} (azonos kezdeti feltétel, azonos szabály) kézzelfogható bemutatása;
+  \item a \emph{hipotézis--kísérlet--ellenőrzés} ciklus gyakorlása kis rácsméreteken;
+  \item differenciálás: haladóbb hallgatók számára hexagonális topológia, kezdőknek négyzetes rács egyszerűbb szabályokkal.
+\end{itemize}
+
+\section{Kapcsolódó szoftverek és eszközök (rövid áttekintés)}
+Léteznek általános CA-kutató eszközök (például a \emph{Golly} népszerű a Life-közösségben), valamint oktatási demók böngészőben. A Cellauto eltérésként \emph{felhasználói listákat} (szavak, színek) és \emph{felhőbe mentett állapotokat} kapcsol a szimulátorhoz, így tantárgyi kontextusban (nyelvóra, színelmélet, projektfeladat) is használható.
+
+\section{Technológiai háttér (választás indoklása)}
+\begin{description}
+  \item[Laravel] gyors REST API fejlesztés, beépített ORM, migrációk, Sanctum API token támogatás.
+  \item[React + TypeScript] típusbiztos admin UI, komponensalapú szerkeszthetőség.
+  \item[Kliensoldali JS (www)] könnyű telepítés, böngészőben futás, minimális build-lánc a publikus demóhoz.
+\end{description}
