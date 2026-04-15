@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import './App.css'
-import { login, type User } from './lib/api'
+import { getCurrentUser, logVisit, login, logout, type User } from './lib/api'
 import { clearAuth, loadAuth, saveAuth } from './lib/auth'
 import { UsersAdmin } from './admin/UsersAdmin'
 import { ListsWordsAdmin } from './lists/ListsWordsAdmin'
 import { ColorListsAdmin } from './colorLists/ColorListsAdmin'
+import { AccessLogsAdmin } from './admin/AccessLogsAdmin'
 
 function App() {
   const [loginValue, setLoginValue] = useState('')
@@ -13,13 +14,27 @@ function App() {
   const [error, setError] = useState<string | null>(null)
   const [token, setToken] = useState<string | null>(null)
   const [user, setUser] = useState<User | null>(null)
-  const [activePage, setActivePage] = useState<'users' | 'lists' | 'colorLists' | null>(null)
+  const [activePage, setActivePage] = useState<'users' | 'lists' | 'colorLists' | 'accessLogs' | null>(null)
 
   useEffect(() => {
     const auth = loadAuth()
     if (!auth) return
     setToken(auth.token)
     setUser(auth.user)
+    void getCurrentUser(auth.token)
+      .then((freshUser) => {
+        setUser(freshUser)
+        saveAuth({ token: auth.token, user: freshUser })
+      })
+      .catch(() => {
+        clearAuth()
+        setToken(null)
+        setUser(null)
+      })
+  }, [])
+
+  useEffect(() => {
+    void logVisit({ entry_point: 'admin' }).catch(() => undefined)
   }, [])
 
   const isAuthed = useMemo(() => Boolean(token && user), [token, user])
@@ -29,7 +44,7 @@ function App() {
     setError(null)
     setBusy(true)
     try {
-      const res = await login({ login: loginValue.trim(), password })
+      const res = await login({ login: loginValue.trim(), password, entry_point: 'admin' })
       setToken(res.token)
       setUser(res.user)
       saveAuth(res)
@@ -46,12 +61,17 @@ function App() {
     saveAuth({ token, user: updated })
   }
 
-  function handleLogout() {
+  async function handleLogout() {
+    setBusy(true)
+    if (token) {
+      await logout(token, { entry_point: 'admin' }).catch(() => undefined)
+    }
     clearAuth()
     setToken(null)
     setUser(null)
     setPassword('')
     setError(null)
+    setBusy(false)
   }
 
   return (
@@ -104,6 +124,14 @@ function App() {
                 disabled={busy}
               >
                 Színlisták
+              </button>
+              <button
+                type="button"
+                className={activePage === 'accessLogs' ? 'menuItem menuItem--active' : 'menuItem'}
+                onClick={() => setActivePage('accessLogs')}
+                disabled={busy}
+              >
+                Access Logok
               </button>
             </div>
           </nav>
@@ -181,6 +209,15 @@ function App() {
                   <span className="menuCard__title">Színlisták</span>
                   <span className="menuCard__desc">Színkészletek módosítása és rendezése.</span>
                 </button>
+                <button
+                  type="button"
+                  className={activePage === 'accessLogs' ? 'menuCard menuCard--active' : 'menuCard'}
+                  onClick={() => setActivePage('accessLogs')}
+                  disabled={busy}
+                >
+                  <span className="menuCard__title">Access Logok</span>
+                  <span className="menuCard__desc">Belépés, kilépés és látogatás naplók szűrhető listában.</span>
+                </button>
               </div>
             </aside>
 
@@ -198,6 +235,8 @@ function App() {
                   <ListsWordsAdmin token={token} />
                 ) : activePage === 'colorLists' && token ? (
                   <ColorListsAdmin token={token} />
+                ) : activePage === 'accessLogs' && token ? (
+                  <AccessLogsAdmin token={token} />
                 ) : null}
               </div>
             </div>

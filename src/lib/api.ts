@@ -13,6 +13,10 @@ export type User = {
   email_verified_at: string | null
   created_at: string
   updated_at: string
+  is_online?: boolean | number
+  is_logged_in?: boolean | number
+  active_token_count?: number
+  last_seen_at?: string | null
 }
 
 export type LoginResponse = {
@@ -20,12 +24,16 @@ export type LoginResponse = {
   user: User
 }
 
+export type EntryPoint = 'www' | 'admin'
+export type AccessLogEventType = 'visit' | 'login' | 'logout'
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api'
 
 export type WordList = {
   id: number
   user_id: number
   name: string
+  public?: boolean | number
   created_at?: string
   updated_at?: string
   words?: WordItem[]
@@ -33,11 +41,51 @@ export type WordList = {
 
 export type WordItem = {
   id: number
-  list_id: number
+  list_id?: number
+  generation?: number
   word: string
-  position: number
+  position?: number
   created_at?: string
   updated_at?: string
+}
+
+export type WordGeneration = {
+  generation: number
+  words: WordItem[]
+}
+
+export type WordGenerationsResponse = {
+  list_id: number
+  generations: WordGeneration[]
+}
+
+export type AccessLog = {
+  id: number
+  event_type: AccessLogEventType
+  entry_point: EntryPoint
+  ip_address: string
+  user_agent: string
+  occurred_at: string
+  user_id: number | null
+  user?: Pick<User, 'id' | 'username' | 'name' | 'email' | 'role'> | null
+}
+
+export type AccessLogsQuery = {
+  event_type?: AccessLogEventType
+  entry_point?: EntryPoint
+  user_id?: number
+  from?: string
+  to?: string
+  per_page?: number
+  page?: number
+}
+
+export type AccessLogsPage = {
+  data: AccessLog[]
+  total?: number
+  per_page?: number
+  current_page?: number
+  last_page?: number
 }
 
 export type CreateUserRequest = {
@@ -106,6 +154,7 @@ function authHeaders(token: string) {
 export async function login(params: {
   login: string
   password: string
+  entry_point: EntryPoint
 }): Promise<LoginResponse> {
   const res = await fetch(`${API_BASE_URL}/login`, {
     method: 'POST',
@@ -121,6 +170,65 @@ export async function login(params: {
   }
 
   return await parseJson<LoginResponse>(res)
+}
+
+export async function logout(token: string, params: { entry_point: EntryPoint }): Promise<void> {
+  const res = await fetch(`${API_BASE_URL}/logout`, {
+    method: 'POST',
+    headers: {
+      ...authHeaders(token),
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(params),
+  })
+
+  if (!res.ok) {
+    throw new Error(await parseErrorMessage(res, 'Logout failed'))
+  }
+}
+
+export async function logVisit(params: { entry_point: EntryPoint; occurred_at?: string }): Promise<void> {
+  const res = await fetch(`${API_BASE_URL}/access-logs/visit`, {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(params),
+  })
+
+  if (!res.ok) {
+    throw new Error(await parseErrorMessage(res, 'Visit log failed'))
+  }
+}
+
+export async function listAccessLogs(token: string, query: AccessLogsQuery = {}): Promise<AccessLogsPage> {
+  const params = new URLSearchParams()
+  Object.entries(query).forEach(([key, value]) => {
+    if (value === undefined || value === null || value === '') return
+    params.set(key, String(value))
+  })
+  const suffix = params.toString()
+  const endpoint = suffix ? `${API_BASE_URL}/access-logs?${suffix}` : `${API_BASE_URL}/access-logs`
+
+  const res = await fetch(endpoint, {
+    headers: {
+      ...authHeaders(token),
+    },
+  })
+
+  if (!res.ok) {
+    throw new Error(await parseErrorMessage(res, 'Access logs fetch failed'))
+  }
+
+  const payload = await parseJson<unknown>(res)
+  if (Array.isArray(payload)) {
+    return { data: payload as AccessLog[] }
+  }
+  if (payload && typeof payload === 'object' && Array.isArray((payload as AccessLogsPage).data)) {
+    return payload as AccessLogsPage
+  }
+  return { data: [] }
 }
 
 export async function getCurrentUser(token: string): Promise<User> {
@@ -146,6 +254,20 @@ export async function listUsers(token: string): Promise<User[]> {
 
   if (!res.ok) {
     throw new Error(await parseErrorMessage(res, 'Users fetch failed'))
+  }
+
+  return await parseJson<User[]>(res)
+}
+
+export async function listUsersOnlineStatus(token: string): Promise<User[]> {
+  const res = await fetch(`${API_BASE_URL}/admin/users/online-status`, {
+    headers: {
+      ...authHeaders(token),
+    },
+  })
+
+  if (!res.ok) {
+    throw new Error(await parseErrorMessage(res, 'Users online-status fetch failed'))
   }
 
   return await parseJson<User[]>(res)
@@ -258,7 +380,10 @@ export async function listLists(token: string): Promise<WordList[]> {
   return await parseJson<WordList[]>(res)
 }
 
-export async function createList(token: string, params: { name: string }): Promise<WordList> {
+export async function createList(
+  token: string,
+  params: { name: string; public?: boolean },
+): Promise<WordList> {
   const res = await fetch(`${API_BASE_URL}/lists`, {
     method: 'POST',
     headers: {
@@ -292,7 +417,7 @@ export async function getList(token: string, listId: number): Promise<WordList> 
 export async function updateList(
   token: string,
   listId: number,
-  params: { name: string },
+  params: { name: string; public?: boolean },
 ): Promise<WordList> {
   const res = await fetch(`${API_BASE_URL}/lists/${listId}`, {
     method: 'PUT',
@@ -323,7 +448,7 @@ export async function deleteList(token: string, listId: number): Promise<void> {
   }
 }
 
-export async function listWords(token: string, listId: number): Promise<WordItem[]> {
+export async function listWords(token: string, listId: number): Promise<WordGenerationsResponse> {
   const res = await fetch(`${API_BASE_URL}/lists/${listId}/words`, {
     headers: {
       ...authHeaders(token),
@@ -334,13 +459,13 @@ export async function listWords(token: string, listId: number): Promise<WordItem
     throw new Error(await parseErrorMessage(res, 'Words fetch failed'))
   }
 
-  return await parseJson<WordItem[]>(res)
+  return await parseJson<WordGenerationsResponse>(res)
 }
 
 export async function createWord(
   token: string,
   listId: number,
-  params: { word: string; position: number },
+  params: { generation: number; word?: string; words?: string[] },
 ): Promise<WordItem> {
   const res = await fetch(`${API_BASE_URL}/lists/${listId}/words`, {
     method: 'POST',
@@ -362,7 +487,7 @@ export async function updateWord(
   token: string,
   listId: number,
   wordId: number,
-  params: Partial<{ word: string; position: number }>,
+  params: Partial<{ generation: number; word: string; position: number }>,
 ): Promise<WordItem> {
   const res = await fetch(`${API_BASE_URL}/lists/${listId}/words/${wordId}`, {
     method: 'PUT',
@@ -395,6 +520,27 @@ export async function deleteWord(
   if (!res.ok) {
     throw new Error(await parseErrorMessage(res, 'Word delete failed'))
   }
+}
+
+export async function replaceWordGenerations(
+  token: string,
+  listId: number,
+  params: { generations: Array<{ generation: number; words: string[] }> },
+): Promise<WordGenerationsResponse> {
+  const res = await fetch(`${API_BASE_URL}/lists/${listId}/word-generations`, {
+    method: 'PUT',
+    headers: {
+      ...authHeaders(token),
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(params),
+  })
+
+  if (!res.ok) {
+    throw new Error(await parseErrorMessage(res, 'Word generations update failed'))
+  }
+
+  return await parseJson<WordGenerationsResponse>(res)
 }
 
 /** User-owned color palette list */

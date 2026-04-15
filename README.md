@@ -8,7 +8,7 @@ See `doc/api-spec.md`.
 
 ## Environment
 
-- **`VITE_API_BASE_URL`**: optional API base URL (default: `/api`)
+- **`VITE_API_BASE_URL`**: optional API base URL (default: `/api`). Production build reads `.env.production` (jelenleg `https://api.cellauto.ro/api`). Dev: lásd `.env.example`.
 
 Currently, two official plugins are available:
 

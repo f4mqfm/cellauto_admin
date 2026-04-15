@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
+import { AlertBanner } from '../components/AlertBanner'
+import { ConfirmModal } from '../components/ConfirmModal'
 import type { User } from '../lib/api'
 import {
   createUser,
   deleteUser,
-  listUsers,
+  listUsersOnlineStatus,
   suspendUser,
   unsuspendUser,
   updateUser,
@@ -17,13 +19,28 @@ type Props = {
 
 const ROLES: Array<User['role']> = ['vendeg', 'diak', 'tanar', 'admin']
 
+function canDeleteUser(target: User, actor: User): boolean {
+  if (target.id === actor.id) return false
+  if (target.role === 'admin') return false
+  return true
+}
+
+/** API: active néha 1/0 (lista a DB-ből), néha true/false (Laravel modell JSON után mentés) */
+function accountIsActive(u: Pick<User, 'active' | 'suspended_at'>): boolean {
+  const on = u.active === 1 || u.active === true
+  return on && u.suspended_at == null
+}
+
 export function UsersAdmin(props: Props) {
   const { token } = props
 
   const [users, setUsers] = useState<User[]>([])
   const [busy, setBusy] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [flash, setFlash] = useState<{ variant: 'error' | 'info' | 'success'; message: string } | null>(null)
+  const [pendingDelete, setPendingDelete] = useState<User | null>(null)
+  const [pendingSuspend, setPendingSuspend] = useState<{ user: User; suspend: boolean } | null>(null)
   const [query, setQuery] = useState('')
+  const [onlineFilter, setOnlineFilter] = useState<'all' | 'online' | 'offline'>('all')
 
   const [createOpen, setCreateOpen] = useState(false)
   const [createForm, setCreateForm] = useState({
@@ -49,21 +66,32 @@ export function UsersAdmin(props: Props) {
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
-    if (!q) return users
-    return users.filter((u) => {
-      const hay = `${u.id} ${u.username} ${u.name} ${u.email} ${u.role}`.toLowerCase()
-      return hay.includes(q)
+    const byText = !q
+      ? users
+      : users.filter((u) => {
+          const hay = `${u.id} ${u.username} ${u.name} ${u.email} ${u.role}`.toLowerCase()
+          return hay.includes(q)
+        })
+
+    if (onlineFilter === 'all') return byText
+    return byText.filter((u) => {
+      const online =
+        u.is_logged_in === true || u.is_logged_in === 1 || u.is_online === true || u.is_online === 1
+      return onlineFilter === 'online' ? online : !online
     })
-  }, [users, query])
+  }, [users, query, onlineFilter])
 
   async function refresh() {
-    setError(null)
+    setFlash(null)
     setBusy(true)
     try {
-      const data = await listUsers(token)
+      const data = await listUsersOnlineStatus(token)
       setUsers(data)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Sikertelen betöltés')
+      setFlash({
+        variant: 'error',
+        message: err instanceof Error ? err.message : 'Sikertelen betöltés',
+      })
     } finally {
       setBusy(false)
     }
@@ -91,7 +119,7 @@ export function UsersAdmin(props: Props) {
 
   async function submitCreate(e: React.FormEvent) {
     e.preventDefault()
-    setError(null)
+    setFlash(null)
     setBusy(true)
     try {
       await createUser(token, {
@@ -105,7 +133,10 @@ export function UsersAdmin(props: Props) {
       setCreateForm({ username: '', name: '', email: '', password: '', role: 'vendeg' })
       await refresh()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Sikertelen létrehozás')
+      setFlash({
+        variant: 'error',
+        message: err instanceof Error ? err.message : 'Sikertelen létrehozás',
+      })
     } finally {
       setBusy(false)
     }
@@ -114,7 +145,7 @@ export function UsersAdmin(props: Props) {
   async function submitEdit(e: React.FormEvent) {
     e.preventDefault()
     if (!editUser) return
-    setError(null)
+    setFlash(null)
     setBusy(true)
     try {
       const payload: Record<string, unknown> = {
@@ -131,33 +162,62 @@ export function UsersAdmin(props: Props) {
       }
       closeEdit()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Sikertelen mentés')
+      setFlash({
+        variant: 'error',
+        message: err instanceof Error ? err.message : 'Sikertelen mentés',
+      })
     } finally {
       setBusy(false)
     }
   }
 
-  async function confirmAndDelete(u: User) {
-    if (!confirm(`Biztosan törlöd? (${u.username} / ${u.email})`)) return
-    setError(null)
+  function requestDelete(u: User) {
+    setFlash(null)
+    if (!canDeleteUser(u, props.currentUser)) {
+      setFlash({
+        variant: 'error',
+        message:
+          u.id === props.currentUser.id
+            ? 'Saját fiókodat nem törölheted.'
+            : 'Admin szerepkörű felhasználó nem törölhető.',
+      })
+      return
+    }
+    setPendingDelete(u)
+  }
+
+  async function executeDelete() {
+    const u = pendingDelete
+    if (!u) return
+    setFlash(null)
     setBusy(true)
     try {
       await deleteUser(token, u.id)
       setUsers((prev) => prev.filter((x) => x.id !== u.id))
       if (editId === u.id) closeEdit()
+      setPendingDelete(null)
+      setFlash({ variant: 'success', message: `A(z) ${u.username} felhasználó törölve.` })
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Sikertelen törlés')
+      setFlash({
+        variant: 'error',
+        message: err instanceof Error ? err.message : 'Sikertelen törlés',
+      })
     } finally {
       setBusy(false)
     }
   }
 
-  async function toggleSuspend(u: User) {
-    const wantsSuspend = u.active === 1 && u.suspended_at == null
-    const actionLabel = wantsSuspend ? 'felfüggeszted' : 'visszaaktiválod'
-    if (!confirm(`Biztosan ${actionLabel}? (${u.username})`)) return
+  function requestSuspendToggle(u: User) {
+    setFlash(null)
+    const wantsSuspend = accountIsActive(u)
+    setPendingSuspend({ user: u, suspend: wantsSuspend })
+  }
 
-    setError(null)
+  async function executeSuspendToggle() {
+    const ctx = pendingSuspend
+    if (!ctx) return
+    const { user: u, suspend: wantsSuspend } = ctx
+    setFlash(null)
     setBusy(true)
     try {
       const updated = wantsSuspend ? await suspendUser(token, u.id) : await unsuspendUser(token, u.id)
@@ -165,8 +225,16 @@ export function UsersAdmin(props: Props) {
       if (props.onCurrentUserUpdated && props.currentUser.id === updated.id) {
         props.onCurrentUserUpdated(updated)
       }
+      setPendingSuspend(null)
+      setFlash({
+        variant: 'success',
+        message: wantsSuspend ? `${u.username} felfüggesztve.` : `${u.username} újra aktiválva.`,
+      })
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Sikertelen művelet')
+      setFlash({
+        variant: 'error',
+        message: err instanceof Error ? err.message : 'Sikertelen művelet',
+      })
     } finally {
       setBusy(false)
     }
@@ -195,11 +263,69 @@ export function UsersAdmin(props: Props) {
         </div>
       </div>
 
-      {error ? <p className="error">{error}</p> : null}
+      {flash ? (
+        <AlertBanner variant={flash.variant} onDismiss={() => setFlash(null)}>
+          {flash.message}
+        </AlertBanner>
+      ) : null}
+
+      <ConfirmModal
+        open={pendingDelete !== null}
+        title="Felhasználó törlése"
+        tone="danger"
+        confirmLabel="Törlés"
+        busy={busy}
+        onCancel={() => setPendingDelete(null)}
+        onConfirm={() => void executeDelete()}
+      >
+        {pendingDelete ? (
+          <p className="muted" style={{ margin: 0 }}>
+            Biztosan törlöd{' '}
+            <strong>
+              {pendingDelete.username}
+            </strong>{' '}
+            <span style={{ wordBreak: 'break-all' }}>({pendingDelete.email})</span> fiókját? Ez nem vonható
+            vissza.
+          </p>
+        ) : null}
+      </ConfirmModal>
+
+      <ConfirmModal
+        open={pendingSuspend !== null}
+        title={pendingSuspend?.suspend ? 'Felfüggesztés' : 'Újraaktiválás'}
+        tone="primary"
+        confirmLabel={pendingSuspend?.suspend ? 'Felfüggeszt' : 'Aktivál'}
+        busy={busy}
+        onCancel={() => setPendingSuspend(null)}
+        onConfirm={() => void executeSuspendToggle()}
+      >
+        {pendingSuspend ? (
+          <p className="muted" style={{ margin: 0 }}>
+            {pendingSuspend.suspend ? (
+              <>
+                Biztosan felfüggeszted <strong>{pendingSuspend.user.username}</strong> felhasználót? Nem fog
+                tudni bejelentkezni.
+              </>
+            ) : (
+              <>
+                Biztosan visszaaktiválod <strong>{pendingSuspend.user.username}</strong> felhasználót?
+              </>
+            )}
+          </p>
+        ) : null}
+      </ConfirmModal>
 
       <label className="field">
         <span className="label">Keresés (id, username, név, email, role)</span>
         <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="pl. admin" />
+      </label>
+      <label className="field">
+        <span className="label">Online szűrő</span>
+        <select value={onlineFilter} onChange={(e) => setOnlineFilter(e.target.value as typeof onlineFilter)}>
+          <option value="all">Mind</option>
+          <option value="online">Online</option>
+          <option value="offline">Offline</option>
+        </select>
       </label>
 
       {createOpen ? (
@@ -346,22 +472,52 @@ export function UsersAdmin(props: Props) {
             {filtered.map((u) => (
               <tr key={u.id}>
                 <td>{u.id}</td>
-                <td>{u.username}</td>
+                <td>
+                  {(() => {
+                    const online =
+                      u.is_logged_in === true || u.is_logged_in === 1 || u.is_online === true || u.is_online === 1
+                    return (
+                      <span
+                        style={{
+                          display: 'inline-block',
+                          width: 10,
+                          height: 10,
+                          borderRadius: '50%',
+                          marginRight: 8,
+                          background: online ? '#16a34a' : '#9ca3af',
+                        }}
+                        title={online ? 'Online' : 'Offline'}
+                      />
+                    )
+                  })()}
+                  {u.username}
+                </td>
                 <td>{u.name}</td>
                 <td>{u.email}</td>
                 <td>
                   <code>{u.role}</code>
                 </td>
-                <td>{u.active === 1 && u.suspended_at == null ? 'Aktív' : 'Felfüggesztett'}</td>
+                <td>{accountIsActive(u) ? 'Aktív' : 'Felfüggesztett'}</td>
                 <td>
                   <div className="row">
                     <button className="counter" onClick={() => openEdit(u)} disabled={busy}>
                       Szerkesztés
                     </button>
-                    <button className="counter" onClick={() => toggleSuspend(u)} disabled={busy}>
-                      {u.active === 1 && u.suspended_at == null ? 'Felfüggeszt' : 'Aktivál'}
+                    <button className="counter" onClick={() => requestSuspendToggle(u)} disabled={busy}>
+                      {accountIsActive(u) ? 'Felfüggeszt' : 'Aktivál'}
                     </button>
-                    <button className="danger" onClick={() => confirmAndDelete(u)} disabled={busy}>
+                    <button
+                      className="danger"
+                      title={
+                        !canDeleteUser(u, props.currentUser)
+                          ? u.id === props.currentUser.id
+                            ? 'Önmagadat nem törölheted.'
+                            : 'Admin szerepkörű felhasználó nem törölhető.'
+                          : undefined
+                      }
+                      onClick={() => requestDelete(u)}
+                      disabled={busy}
+                    >
                       Törlés
                     </button>
                   </div>
