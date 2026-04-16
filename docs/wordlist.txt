@@ -17,3 +17,75 @@ modositas:
 a wordlist be legyen meg egy mezo: public ami logikai
 ez alabol false es lehessen ezt is bealitani apibol
 az apit frissitsd eszerint
+
+
+modositas:
+
+kell relacioba kossem a kulombozo generacios szavakat...
+kifejtem egy peldaval:
+van egy szolista, peldaul: angol szavak
+ehez tartonak a kulombozo generacios szavak, peldaul:
+GEN1: one, two, free, six, ...
+GEN2: move, sleep, work, go, run, ...
+Gen3: blue, black, red, purple, green, ...
+
+a GEN1 bol kiindilva a szvalat relacioba kell hozni a GEN2 bel levio szavakkal nem kell mindent caak mit akarunk
+GEN1 - GEN2
+peldaul: one - sleep, one - work, one - go
+six - move, six - go, six - run
+es igy tovabb
+Most jon a GEN2 - GEN3
+move - red, move - green, move - blue
+sleep - blue, sleep - black, sleep - purple
+work - blue, work, green, ...
+
+es igy tovabb...
+ahany generacio van addig lehessen folytatni
+a relaciokat csak a kisseb generaciotol egyel nagyobig lehet megadni
+tehet: GEN1 - GEN2, GEN2 - GEN3, GEN3 - GEN4, ...
+
+erre kell az adatszerkezet es az api hivasok, hogy az admin felulet tudja majd szerkeszteni es api hivasokkal feltolteni az adatbazisba
+
+kerlek csinald meg es dokumentald is legalabb
+
+
+Modositas:
+Kell a wordlist hez egy megjegyzes mezo, lehet enter is benne, egy szovegdoboz
+kell meg egy mezo ugyacsak szovegnek a neve legyen wordlist, ebbe lessznek szavak elvalasztva pontosvesszovel
+ha a felhasznalo ugy akarja felvinni a szolistat, gogy elore elkesziti a mondatokat es a generacios szavakat pontosvesszovel elvalassza
+a * al kezdodo sorok azok a kakuktojas szavak, tehat ugyanolyan sor mint az elozo de nem minden helyen muszj szo legyen csak * al kezdodik
+eben az api reszben  ennek nincs jeletosege, csak a funkciot biztositsd a kezelesere mert az admin fog belolle dolgozni
+
+az admin nak:
+fentebb bejott ket ukj mezo a szolistaba
+ezt e kell tenni az admnba
+a notes es a wordlist
+a notes lehet 2-3 soros, a wordlist az legyen 6 soros es atmeretezheto
+
+
+magyarazakent a wordlisthez ird fel, hogy ";" gen separator, * al kezdodo kakuktojas szavak, itt is ; a gen separator
+
+
+modositas:
+pelda a wordlist text mezore:
+alszik; Jancsi; othonn; mindig; ejjel
+alszik; Jancsi; othonn; mindig; ejjel
+alszik; Jancsi; othonn; mindig; delelott
+alszik; Jancsi; othonn; mindig; nappal
+alszik; Mariska; othonn; mindig; ejjel
+eszik; Jancsi; Belanal; neha; nappal
+eszik; Jancsi; Belanal; neha; ejjel
+ugrik; Mariska; Belanal; neha; delelott
+ugrik; Mariska; Belanal; mindig; ejjel
+*ejjel;mindig;ugrik;Mariska;othonn
+*majom;reggelibe;Pista;eszik;kacag
+
+minden sor tartalmazz 1-5 generaciot, hetet tobb is kevesebb is, a ; az elvalaszto
+minden sor relaciokat ir le, ahogy egymasutan kovetkeznek az mar a relacios kotest leirja
+minden ugyanabba az oszlopba levo szo 1 szer kell szerepeljen
+a * al kezdodo sorok azko csak szavak mik fel vannak vive, hogy legyen benne a szolistaba, ezek tartalmazhatnak ures szot is, ez azt jelenti, hogy az adott generaciohoz nem tarozik szo
+ebbol a listabol kell kigeneralni az szavakat es a relaciokat egy nyomogomb segitsegevel
+tegyel be a wordlist text ala egy nyomogombot ami kigeneralja a listabol a szavakat
+ha mar a szavak felvannak toltve es a relaciok esetleg a rrwaciok is akkor figyelmeztessen, hogy mar van adat es felulirodik
+ha figyeleztetesnel igent nyomok akor rorlodjon a szavak es a relaciok es epitse fel ujra a listabol
+

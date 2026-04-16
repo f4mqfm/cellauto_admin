@@ -261,6 +261,11 @@ textarea:focus-visible {
   outline-offset: 2px;
 }
 
+.listWordlistArea {
+  resize: vertical;
+  min-height: 120px;
+}
+
 .row {
   display: flex;
   gap: 10px;
@@ -458,7 +463,7 @@ button.danger:hover:not(:disabled) {
 .confirmModal__root {
   position: fixed;
   inset: 0;
-  z-index: 200;
+  z-index: 10050;
   display: grid;
   place-items: center;
   padding: 20px;
@@ -590,6 +595,193 @@ button.danger:hover:not(:disabled) {
   border: 1px solid var(--border);
   background: color-mix(in srgb, var(--bg) 92%, var(--code-bg));
   font-size: 13px;
+}
+
+.relChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--bg) 92%, var(--code-bg));
+  font-size: 13px;
+  color: var(--text-h);
+}
+
+.chip--muted {
+  opacity: 0.75;
+}
+
+.treeModal {
+  width: min(1320px, calc(100vw - 32px));
+  max-height: calc(100vh - 40px);
+  overflow: auto;
+}
+
+.sentenceModal {
+  width: min(960px, calc(100vw - 40px));
+  max-height: calc(100vh - 40px);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.sentenceFiltersBar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.sentenceFiltersBar__title {
+  font-size: 13px;
+}
+
+.sentenceFiltersBar__clear {
+  font-size: 13px;
+  padding: 6px 10px;
+}
+
+.sentenceFiltersGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+  gap: 8px 10px;
+}
+
+.sentenceFilterField {
+  margin-bottom: 0;
+}
+
+.sentenceFilterField input {
+  font-size: 13px;
+  padding: 6px 8px;
+}
+
+.sentencesScroll {
+  flex: 1;
+  min-height: 120px;
+  max-height: min(70vh, 720px);
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 8px 10px;
+  background: color-mix(in srgb, var(--bg) 92%, var(--code-bg));
+}
+
+.sentenceRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  margin-bottom: 4px;
+}
+
+.sentenceRow:last-child {
+  margin-bottom: 0;
+}
+
+.sentenceWordPill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.75rem;
+  padding: 3px 8px;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--border) 88%, transparent);
+  background: color-mix(in srgb, var(--bg) 94%, var(--code-bg));
+  color: var(--text-h);
+  font-size: 13px;
+  font-weight: 500;
+  box-sizing: border-box;
+}
+
+.treeCanvasWrap {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--bg) 92%, var(--code-bg));
+  overflow: auto;
+}
+
+.treeCanvas {
+  display: block;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.treeCanvas * {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.treeLine {
+  stroke: color-mix(in srgb, var(--accent) 58%, var(--text));
+  stroke-width: 2;
+  opacity: 0.85;
+}
+
+.treeLine--hit {
+  stroke: transparent;
+  stroke-width: 14;
+  cursor: pointer;
+}
+
+.treeLine--preview {
+  stroke-dasharray: 6 5;
+  stroke-width: 2.5;
+  opacity: 1;
+}
+
+.treeLine--invalid {
+  stroke: #ef4444;
+  stroke-dasharray: 6 5;
+  stroke-width: 2.5;
+  opacity: 0.9;
+}
+
+.treeGenLabel {
+  fill: var(--text-h);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.treeNode {
+  fill: var(--bg);
+  stroke: var(--border);
+  stroke-width: 2;
+}
+
+.treeNode--related {
+  fill: color-mix(in srgb, var(--accent) 20%, var(--bg));
+  stroke: var(--accent-border);
+}
+
+.treeNode--target {
+  stroke: color-mix(in srgb, var(--accent) 80%, var(--text-h));
+  stroke-width: 3;
+}
+
+.treeNodeGroup {
+  cursor: grab;
+}
+
+.treeNodeGroup--dragging {
+  cursor: grabbing;
+}
+
+.treeNodeLabel {
+  fill: var(--text-h);
+  font-size: 13px;
+  font-weight: 600;
+  pointer-events: none;
 }
 
 .swatchQueue__dot {

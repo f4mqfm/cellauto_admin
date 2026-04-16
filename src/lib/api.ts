@@ -8,7 +8,7 @@ export type User = {
   name: string
   email: string
   role: 'vendeg' | 'diak' | 'tanar' | 'admin' | (string & {})
-  active: number
+  active: number | boolean
   suspended_at: string | null
   email_verified_at: string | null
   created_at: string
@@ -34,6 +34,8 @@ export type WordList = {
   user_id: number
   name: string
   public?: boolean | number
+  notes?: string | null
+  wordlist?: string | null
   created_at?: string
   updated_at?: string
   words?: WordItem[]
@@ -57,6 +59,17 @@ export type WordGeneration = {
 export type WordGenerationsResponse = {
   list_id: number
   generations: WordGeneration[]
+}
+
+export type WordRelation = {
+  id: number
+  list_id: number
+  from_word_id: number
+  to_word_id: number
+  fromWord?: Pick<WordItem, 'id' | 'generation' | 'word' | 'list_id'>
+  toWord?: Pick<WordItem, 'id' | 'generation' | 'word' | 'list_id'>
+  created_at?: string
+  updated_at?: string
 }
 
 export type AccessLog = {
@@ -382,7 +395,7 @@ export async function listLists(token: string): Promise<WordList[]> {
 
 export async function createList(
   token: string,
-  params: { name: string; public?: boolean },
+  params: { name: string; public?: boolean; notes?: string | null; wordlist?: string | null },
 ): Promise<WordList> {
   const res = await fetch(`${API_BASE_URL}/lists`, {
     method: 'POST',
@@ -417,7 +430,7 @@ export async function getList(token: string, listId: number): Promise<WordList> 
 export async function updateList(
   token: string,
   listId: number,
-  params: { name: string; public?: boolean },
+  params: { name: string; public?: boolean; notes?: string | null; wordlist?: string | null },
 ): Promise<WordList> {
   const res = await fetch(`${API_BASE_URL}/lists/${listId}`, {
     method: 'PUT',
@@ -541,6 +554,65 @@ export async function replaceWordGenerations(
   }
 
   return await parseJson<WordGenerationsResponse>(res)
+}
+
+export async function listWordRelations(
+  token: string,
+  listId: number,
+  params: { from_generation?: number } = {},
+): Promise<WordRelation[]> {
+  const qs = new URLSearchParams()
+  if (params.from_generation != null) qs.set('from_generation', String(params.from_generation))
+
+  const suffix = qs.toString()
+  const endpoint = suffix
+    ? `${API_BASE_URL}/lists/${listId}/word-relations?${suffix}`
+    : `${API_BASE_URL}/lists/${listId}/word-relations`
+
+  const res = await fetch(endpoint, {
+    headers: {
+      ...authHeaders(token),
+    },
+  })
+
+  if (!res.ok) {
+    throw new Error(await parseErrorMessage(res, 'Word relations fetch failed'))
+  }
+
+  return await parseJson<WordRelation[]>(res)
+}
+
+export async function replaceWordRelationsForFromWord(
+  token: string,
+  listId: number,
+  fromWordId: number,
+  params: { to_word_ids: number[] },
+): Promise<void> {
+  const res = await fetch(`${API_BASE_URL}/lists/${listId}/word-relations/from/${fromWordId}`, {
+    method: 'PUT',
+    headers: {
+      ...authHeaders(token),
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(params),
+  })
+
+  if (!res.ok) {
+    throw new Error(await parseErrorMessage(res, 'Word relations update failed'))
+  }
+}
+
+export async function deleteWordRelation(token: string, listId: number, relationId: number): Promise<void> {
+  const res = await fetch(`${API_BASE_URL}/lists/${listId}/word-relations/${relationId}`, {
+    method: 'DELETE',
+    headers: {
+      ...authHeaders(token),
+    },
+  })
+
+  if (!res.ok) {
+    throw new Error(await parseErrorMessage(res, 'Word relation delete failed'))
+  }
 }
 
 /** User-owned color palette list */

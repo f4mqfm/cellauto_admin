@@ -40,7 +40,6 @@ export function UsersAdmin(props: Props) {
   const [pendingDelete, setPendingDelete] = useState<User | null>(null)
   const [pendingSuspend, setPendingSuspend] = useState<{ user: User; suspend: boolean } | null>(null)
   const [query, setQuery] = useState('')
-  const [onlineFilter, setOnlineFilter] = useState<'all' | 'online' | 'offline'>('all')
 
   const [createOpen, setCreateOpen] = useState(false)
   const [createForm, setCreateForm] = useState({
@@ -66,20 +65,12 @@ export function UsersAdmin(props: Props) {
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
-    const byText = !q
-      ? users
-      : users.filter((u) => {
-          const hay = `${u.id} ${u.username} ${u.name} ${u.email} ${u.role}`.toLowerCase()
-          return hay.includes(q)
-        })
-
-    if (onlineFilter === 'all') return byText
-    return byText.filter((u) => {
-      const online =
-        u.is_logged_in === true || u.is_logged_in === 1 || u.is_online === true || u.is_online === 1
-      return onlineFilter === 'online' ? online : !online
+    if (!q) return users
+    return users.filter((u) => {
+      const hay = `${u.id} ${u.username} ${u.name} ${u.email} ${u.role}`.toLowerCase()
+      return hay.includes(q)
     })
-  }, [users, query, onlineFilter])
+  }, [users, query])
 
   async function refresh() {
     setFlash(null)
@@ -257,7 +248,19 @@ export function UsersAdmin(props: Props) {
           <button className="counter" onClick={refresh} disabled={busy}>
             {busy ? 'Betöltés…' : 'Frissítés'}
           </button>
-          <button className="primary" onClick={() => setCreateOpen((v) => !v)} disabled={busy}>
+          <button
+            type="button"
+            className="primary"
+            onClick={() => {
+              if (createOpen) {
+                setCreateOpen(false)
+              } else {
+                setCreateForm({ username: '', name: '', email: '', password: '', role: 'vendeg' })
+                setCreateOpen(true)
+              }
+            }}
+            disabled={busy}
+          >
             {createOpen ? 'Bezárás' : 'Új felhasználó'}
           </button>
         </div>
@@ -318,14 +321,6 @@ export function UsersAdmin(props: Props) {
       <label className="field">
         <span className="label">Keresés (id, username, név, email, role)</span>
         <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="pl. admin" />
-      </label>
-      <label className="field">
-        <span className="label">Online szűrő</span>
-        <select value={onlineFilter} onChange={(e) => setOnlineFilter(e.target.value as typeof onlineFilter)}>
-          <option value="all">Mind</option>
-          <option value="online">Online</option>
-          <option value="offline">Offline</option>
-        </select>
       </label>
 
       {createOpen ? (
