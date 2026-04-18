@@ -6,12 +6,16 @@ import {
   createList,
   deleteList,
   deleteWordRelation,
+  getList,
   listLists,
+  listWordGenMessages,
   listWordRelations,
   listWords,
+  putWordGenMessages,
   replaceWordRelationsForFromWord,
   replaceWordGenerations,
   updateList,
+  type WordGenMessageRow,
   type WordGenerationsResponse,
   type WordList,
   type WordRelation,
@@ -187,20 +191,427 @@ function enumerateFullRelationPaths(
   return collected
 }
 
+/** Wordlist szöveg sorokra bontva: nem * → fő tábla; * → kakuktojás tábla (a * nélkül). */
+function parseWordlistToGrids(raw: string): { main: string[][]; star: string[][] } {
+  const main: string[][] = []
+  const star: string[][] = []
+  for (const lineRaw of raw.split(/\r?\n/)) {
+    const line = lineRaw.trim()
+    if (!line) continue
+    const isStar = line.startsWith('*')
+    const body = isStar ? line.slice(1).trimStart() : line
+    const cells = body.split(';').map((c) => c.trim())
+    if (isStar) star.push(cells)
+    else main.push(cells)
+  }
+  return { main, star }
+}
+
+function inferMaxCols(main: string[][], star: string[][]): number {
+  let m = 0
+  for (const r of main) m = Math.max(m, r.length)
+  for (const r of star) m = Math.max(m, r.length)
+  return m
+}
+
+function padMatrixToCols(rows: string[][], cols: number): string[][] {
+  return rows.map((row) => {
+    const copy = [...row]
+    while (copy.length < cols) copy.push('')
+    return copy.slice(0, cols)
+  })
+}
+
+/** Ugyanaz a `;` / `*` formátum, mint a Wordlist (szöveg) mezőben. */
+function serializeWordlistFromGrids(mainRows: string[][], starRows: string[][]): string {
+  const trimTrailing = (cells: string[]): string[] => {
+    const t = cells.map((c) => normalizeWordToken(c))
+    while (t.length > 0 && !t[t.length - 1]) t.pop()
+    return t
+  }
+  const lines: string[] = []
+  for (const row of mainRows) {
+    const t = trimTrailing([...row])
+    if (t.length === 0) continue
+    lines.push(t.join(';'))
+  }
+  for (const row of starRows) {
+    const t = trimTrailing([...row])
+    if (t.length === 0) continue
+    lines.push(`*${t.join(';')}`)
+  }
+  return lines.join('\n')
+}
+
+async function buildFriendlyWordlistInitial(args: {
+  token: string
+  listId: number
+  wordlistDraft: string
+  wordsData: WordGenerationsResponse | null
+}): Promise<{ cols: number; mainRows: string[][]; starRows: string[][] }> {
+  const raw = args.wordlistDraft.trim()
+
+  if (raw) {
+    const { main, star } = parseWordlistToGrids(raw)
+    let cols = inferMaxCols(main, star)
+    if (cols === 0) cols = 3
+    const mainRows = padMatrixToCols(main.length > 0 ? main : [Array(cols).fill('')], cols)
+    const starRows = padMatrixToCols(star.length > 0 ? star : [Array(cols).fill('')], cols)
+    return { cols, mainRows, starRows }
+  }
+
+  const wd = args.wordsData
+  const hasWords = wd ? wd.generations.some((g) => g.words.length > 0) : false
+
+  if (wd && hasWords) {
+    const rels = await listWordRelations(args.token, args.listId)
+    const paths = enumerateFullRelationPaths(wd, rels)
+    const maxG = wd.generations.length > 0 ? Math.max(...wd.generations.map((g) => g.generation)) : 0
+    let cols = Math.max(3, maxG)
+
+    let mainRows: string[][]
+    if (paths.length > 0) {
+      cols = Math.max(cols, paths[0].length)
+      mainRows = paths.map((p) => {
+        const r = [...p]
+        while (r.length < cols) r.push('')
+        return r.slice(0, cols)
+      })
+    } else {
+      mainRows = [Array(cols).fill('')]
+    }
+
+    return {
+      cols,
+      mainRows: padMatrixToCols(mainRows, cols),
+      starRows: padMatrixToCols([Array(cols).fill('')], cols),
+    }
+  }
+
+  const cols = 3
+  return {
+    cols,
+    mainRows: [Array(3).fill('')],
+    starRows: [Array(3).fill('')],
+  }
+}
+
+type WordlistFriendlyPayload = {
+  cols: number
+  mainRows: string[][]
+  starRows: string[][]
+
+}
+
+function WordlistFriendlyModal(props: {
+  open: boolean
+  payload: WordlistFriendlyPayload | null
+  onClose: () => void
+  onApply: (text: string) => void
+}) {
+  const { open, payload, onClose, onApply } = props
+  const [cols, setCols] = useState(3)
+  const [mainRows, setMainRows] = useState<string[][]>([])
+  const [starRows, setStarRows] = useState<string[][]>([])
+
+  useLayoutEffect(() => {
+    if (!open || !payload) return
+    setCols(payload.cols)
+    setMainRows(payload.mainRows.map((r) => [...r]))
+    setStarRows(payload.starRows.map((r) => [...r]))
+  }, [open, payload])
+
+  function addColumn() {
+    setCols((c) => c + 1)
+    setMainRows((prev) => prev.map((r) => [...r, '']))
+    setStarRows((prev) => prev.map((r) => [...r, '']))
+  }
+
+  function removeLastColumn() {
+    if (cols <= 1) return
+    const n = cols - 1
+    setCols(n)
+    setMainRows((prev) => prev.map((r) => r.slice(0, n)))
+    setStarRows((prev) => prev.map((r) => r.slice(0, n)))
+  }
+
+  function addMainRow() {
+    setMainRows((prev) => {
+      const w = prev.length > 0 ? prev[0].length : cols
+      return [...prev, Array(w).fill('')]
+    })
+  }
+
+  function addStarRow() {
+    setStarRows((prev) => {
+      const w = prev.length > 0 ? prev[0].length : cols
+      return [...prev, Array(w).fill('')]
+    })
+  }
+
+  function removeMainRow(idx: number) {
+    setMainRows((prev) => (prev.length <= 1 ? prev : prev.filter((_, i) => i !== idx)))
+  }
+
+  function removeStarRow(idx: number) {
+    setStarRows((prev) => (prev.length <= 1 ? prev : prev.filter((_, i) => i !== idx)))
+  }
+
+  if (!open || !payload) return null
+
+  return (
+    <div
+      className="confirmModal__root"
+      role="presentation"
+      onMouseDown={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <div className="confirmModal__backdrop" aria-hidden />
+      <div
+        className="confirmModal__panel wordlistFriendlyModal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="wordlistFriendlyTitle"
+        onMouseDown={(e) => e.stopPropagation()}
+      >
+        <div className="row row--spread" style={{ marginBottom: 10 }}>
+          <h3 id="wordlistFriendlyTitle" className="confirmModal__title" style={{ margin: 0 }}>
+            Wordlist felhasználóbarát szerkesztő
+          </h3>
+          <button type="button" className="danger" onClick={onClose}>
+            × Bezárás
+          </button>
+        </div>
+
+        <p className="muted" style={{ margin: '0 0 12px', fontSize: 13 }}>
+          Oszlopok = generációk (<code>;</code> elválasztó a szöveg mezőben). A második táblában a <code>*</code>{' '}
+          (kakuktojás) sorok adhatók meg — ezek nem alkotnak relációt.
+        </p>
+
+        <div className="wordlistFriendlyToolbar row" style={{ flexWrap: 'wrap', marginBottom: 8 }}>
+          <button type="button" className="counter" onClick={addMainRow}>
+            + Új sor (relációs sorok)
+          </button>
+          <button type="button" className="counter" onClick={addColumn}>
+            + Új GEN (oszlop)
+          </button>
+          <button type="button" className="counter" onClick={removeLastColumn} disabled={cols <= 1}>
+            Utolsó GEN törlése
+          </button>
+          <button type="button" className="counter" onClick={addStarRow}>
+            + Új kakuktojás sor
+          </button>
+        </div>
+
+        <div className="wordlistFriendlySectionLabel">Relációs sorok (nem * — élek ezekből)</div>
+        <div className="wordlistFriendlyTableWrap">
+          <table className="table wordlistFriendlyTable">
+            <thead>
+              <tr>
+                <th style={{ width: 36 }}>#</th>
+                {Array.from({ length: cols }, (_, i) => (
+                  <th key={`mh-${i}`}>GEN{i + 1}</th>
+                ))}
+                <th style={{ width: 44 }} />
+              </tr>
+            </thead>
+            <tbody>
+              {mainRows.map((row, ri) => (
+                <tr key={`mr-${ri}`}>
+                  <td className="muted">{ri + 1}</td>
+                  {Array.from({ length: cols }, (_, ci) => (
+                    <td key={`mc-${ri}-${ci}`}>
+                      <input
+                        type="text"
+                        value={row[ci] ?? ''}
+                        onChange={(e) => {
+                          const v = e.target.value
+                          setMainRows((prev) =>
+                            prev.map((r, rIdx) => {
+                              if (rIdx !== ri) return r
+                              const next = padMatrixToCols([r], cols)[0]
+                              next[ci] = v
+                              return next
+                            }),
+                          )
+                        }}
+                        className="wordlistFriendlyCell"
+                        autoComplete="off"
+                        spellCheck={false}
+                        aria-label={`Relációs sor ${ri + 1}, GEN${ci + 1}`}
+                      />
+                    </td>
+                  ))}
+                  <td>
+                    <button
+                      type="button"
+                      className="counter"
+                      disabled={mainRows.length <= 1}
+                      title="Sor törlése"
+                      onClick={() => removeMainRow(ri)}
+                    >
+                      ×
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="wordlistFriendlySectionLabel" style={{ marginTop: 14 }}>
+          Kakuktojás sorok (<code>*</code> — csak szókészlet, nem alkot relációt)
+        </div>
+        <div className="wordlistFriendlyTableWrap">
+          <table className="table wordlistFriendlyTable">
+            <thead>
+              <tr>
+                <th style={{ width: 36 }}>#</th>
+                {Array.from({ length: cols }, (_, i) => (
+                  <th key={`sh-${i}`}>GEN{i + 1}</th>
+                ))}
+                <th style={{ width: 44 }} />
+              </tr>
+            </thead>
+            <tbody>
+              {starRows.map((row, ri) => (
+                <tr key={`sr-${ri}`}>
+                  <td className="muted">{ri + 1}</td>
+                  {Array.from({ length: cols }, (_, ci) => (
+                    <td key={`sc-${ri}-${ci}`}>
+                      <input
+                        type="text"
+                        value={row[ci] ?? ''}
+                        onChange={(e) => {
+                          const v = e.target.value
+                          setStarRows((prev) =>
+                            prev.map((r, rIdx) => {
+                              if (rIdx !== ri) return r
+                              const next = padMatrixToCols([r], cols)[0]
+                              next[ci] = v
+                              return next
+                            }),
+                          )
+                        }}
+                        className="wordlistFriendlyCell"
+                        autoComplete="off"
+                        spellCheck={false}
+                        aria-label={`Kakuktojás sor ${ri + 1}, GEN${ci + 1}`}
+                      />
+                    </td>
+                  ))}
+                  <td>
+                    <button
+                      type="button"
+                      className="counter"
+                      disabled={starRows.length <= 1}
+                      title="Sor törlése"
+                      onClick={() => removeStarRow(ri)}
+                    >
+                      ×
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="confirmModal__actions" style={{ marginTop: 16 }}>
+          <button type="button" className="counter" onClick={onClose}>
+            Mégse
+          </button>
+          <button
+            type="button"
+            className="primary"
+            onClick={() => {
+              onApply(serializeWordlistFromGrids(mainRows, starRows))
+              onClose()
+            }}
+          >
+            Mentés a Wordlist mezőbe
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function emptyGenMessageRows(maxGen: number): WordGenMessageRow[] {
+  return Array.from({ length: maxGen }, (_, i) => ({
+    generation: i + 1,
+    correct_answer_message: null,
+    incorrect_answer_message: null,
+  }))
+}
+
+type GenMessageDraft = {
+  generation: number
+  correct_answer_message: string
+  incorrect_answer_message: string
+}
+
+function rowsToDrafts(rows: WordGenMessageRow[]): GenMessageDraft[] {
+  return rows.map((r) => ({
+    generation: r.generation,
+    correct_answer_message: r.correct_answer_message ?? '',
+    incorrect_answer_message: r.incorrect_answer_message ?? '',
+  }))
+}
+
 function SentenceModalContent(props: {
+  token: string
+  listId: number
   sentencesBusy: boolean
   sentencesError: string | null
   sentencesMaxGen: number
   sentencesPaths: string[][]
+  genMsgLoadError: string | null
+  genMessageRows: WordGenMessageRow[] | null
   onDismissError: () => void
+  onDismissGenMsgError: () => void
+  onGenMessagesSaved: (rows: WordGenMessageRow[]) => void
+  toUiError: (err: unknown, fallback: string) => string
 }) {
-  const { sentencesBusy, sentencesError, sentencesMaxGen, sentencesPaths, onDismissError } = props
+  const {
+    token,
+    listId,
+    sentencesBusy,
+    sentencesError,
+    sentencesMaxGen,
+    sentencesPaths,
+    genMsgLoadError,
+    genMessageRows,
+    onDismissError,
+    onDismissGenMsgError,
+    onGenMessagesSaved,
+    toUiError,
+  } = props
 
   const [filters, setFilters] = useState<string[]>([])
+  const [genMsgPanelOpen, setGenMsgPanelOpen] = useState(false)
+  const [msgDrafts, setMsgDrafts] = useState<GenMessageDraft[]>([])
+  const [msgSaveBusy, setMsgSaveBusy] = useState(false)
+  const [msgSaveError, setMsgSaveError] = useState<string | null>(null)
+  const [msgSaveOk, setMsgSaveOk] = useState(false)
+  const [focusedMsgGen, setFocusedMsgGen] = useState<number | null>(null)
 
   useLayoutEffect(() => {
     setFilters(Array(Math.max(0, sentencesMaxGen)).fill(''))
   }, [sentencesMaxGen, sentencesPaths])
+
+  useLayoutEffect(() => {
+    if (genMessageRows == null) {
+      setMsgDrafts([])
+      return
+    }
+    setMsgDrafts(rowsToDrafts(genMessageRows))
+    setMsgSaveOk(false)
+    setMsgSaveError(null)
+  }, [genMessageRows])
+
+  useLayoutEffect(() => {
+    if (!genMsgPanelOpen) setFocusedMsgGen(null)
+  }, [genMsgPanelOpen])
 
   const filteredPaths = useMemo(() => {
     if (sentencesPaths.length === 0) return []
@@ -215,6 +626,202 @@ function SentenceModalContent(props: {
     })
   }, [sentencesPaths, filters, sentencesMaxGen])
 
+  async function saveGenMessages() {
+    if (sentencesMaxGen === 0) return
+    setMsgSaveBusy(true)
+    setMsgSaveError(null)
+    setMsgSaveOk(false)
+    try {
+      const generations = msgDrafts.map((d) => ({
+        generation: d.generation,
+        correct_answer_message: d.correct_answer_message.trim() ? d.correct_answer_message.trim() : null,
+        incorrect_answer_message: d.incorrect_answer_message.trim()
+          ? d.incorrect_answer_message.trim()
+          : null,
+      }))
+      const res = await putWordGenMessages(token, listId, { generations })
+      onGenMessagesSaved(res.generations)
+      setMsgSaveOk(true)
+    } catch (err) {
+      setMsgSaveError(toUiError(err, 'Üzenetek mentése sikertelen'))
+    } finally {
+      setMsgSaveBusy(false)
+    }
+  }
+
+  const sentencesBlock =
+    sentencesBusy ? (
+      <p className="muted">Betöltés…</p>
+    ) : sentencesMaxGen === 0 ? (
+      <p className="muted">Nincs generációs adat ehhez a listához.</p>
+    ) : sentencesPaths.length === 0 ? (
+      <p className="muted">
+        {sentencesMaxGen >= 2
+          ? `Nincs egyetlen teljes lánc sem GEN1 → GEN${sentencesMaxGen} irányban a megadott relációkkal.`
+          : 'Nincs GEN1 szó ehhez a listához.'}
+      </p>
+    ) : (
+      <>
+        <div className="sentenceFiltersBar">
+          <span className="sentenceFiltersBar__title muted">Oszlopszűrő (gépelésre azonnal szűkül)</span>
+          <button
+            type="button"
+            className="counter sentenceFiltersBar__clear"
+            onClick={() => setFilters(Array(sentencesMaxGen).fill(''))}
+          >
+            Törlés
+          </button>
+        </div>
+        <div className="sentenceFiltersGrid" style={{ marginBottom: 10 }}>
+          {Array.from({ length: sentencesMaxGen }, (_, i) => i + 1).map((gen) => (
+            <label key={`sf-gen-${gen}`} className="field sentenceFilterField">
+              <span className="label">GEN{gen}</span>
+              <input
+                type="text"
+                inputMode="search"
+                enterKeyHint="search"
+                value={filters[gen - 1] ?? ''}
+                onChange={(e) => {
+                  const v = e.target.value
+                  setFilters((prev) => {
+                    const next = [...prev]
+                    while (next.length < sentencesMaxGen) next.push('')
+                    next[gen - 1] = v
+                    return next
+                  })
+                }}
+                placeholder="szűrő…"
+                autoComplete="off"
+                spellCheck={false}
+              />
+            </label>
+          ))}
+        </div>
+        <p className="muted" style={{ margin: '0 0 8px', fontSize: 13 }}>
+          Megjelenítve <strong>{filteredPaths.length}</strong> / {sentencesPaths.length} mondat.
+        </p>
+        <div className="sentencesScroll">
+          {filteredPaths.length === 0 ? (
+            <p className="muted" style={{ margin: 0 }}>
+              Nincs a szűrőnek megfelelő mondat.
+            </p>
+          ) : (
+            filteredPaths.map((words, idx) => (
+              <div className="sentenceRow" key={`sent-${idx}-${words.join('\u0000')}`}>
+                {words.map((w, i) => {
+                  const genNum = i + 1
+                  const pillClass =
+                    focusedMsgGen != null
+                      ? focusedMsgGen === genNum
+                        ? 'sentenceWordPill sentenceWordPill--genFocus'
+                        : 'sentenceWordPill sentenceWordPill--genMuted'
+                      : 'sentenceWordPill'
+                  return (
+                    <span key={`sent-${idx}-g${i}`} className={pillClass} title={`GEN${genNum}`}>
+                      {w}
+                    </span>
+                  )
+                })}
+              </div>
+            ))
+          )}
+        </div>
+      </>
+    )
+
+  const genAside =
+    sentencesBusy || sentencesMaxGen === 0 ? null : (
+      <aside className="sentenceModalGenAside">
+        {!genMsgPanelOpen ? (
+          <button type="button" className="counter sentenceGenMsgToggle" onClick={() => setGenMsgPanelOpen(true)}>
+            GEN üzenetek szerkesztése
+          </button>
+        ) : (
+          <div className="sentenceGenMsgPanel">
+            <div className="sentenceGenMsgPanel__head">
+              <span className="muted" style={{ fontSize: 13 }}>
+                Generációnként helyes / helytelen válasz szöveg
+              </span>
+              <button
+                type="button"
+                className="counter sentenceGenMsgToggle"
+                onClick={() => setGenMsgPanelOpen(false)}
+              >
+                Elrejtés
+              </button>
+            </div>
+            {genMsgLoadError ? (
+              <AlertBanner variant="error" onDismiss={onDismissGenMsgError}>
+                {genMsgLoadError}
+              </AlertBanner>
+            ) : null}
+            {msgSaveError ? (
+              <AlertBanner variant="error" onDismiss={() => setMsgSaveError(null)}>
+                {msgSaveError}
+              </AlertBanner>
+            ) : null}
+            {msgSaveOk ? (
+              <AlertBanner variant="success" onDismiss={() => setMsgSaveOk(false)}>
+                GEN üzenetek elmentve.
+              </AlertBanner>
+            ) : null}
+            <div className="sentenceGenMsgBlocks">
+              {msgDrafts.map((d) => (
+                <div
+                  key={`gmsg-${d.generation}`}
+                  className="sentenceGenMsgBlock"
+                  onFocus={() => setFocusedMsgGen(d.generation)}
+                  onBlur={(e) => {
+                    const next = e.relatedTarget as Node | null
+                    if (!e.currentTarget.contains(next)) setFocusedMsgGen(null)
+                  }}
+                >
+                  <div className="sentenceGenMsgBlock__title">GEN{d.generation}</div>
+                  <label className="field sentenceGenMsgField">
+                    <span className="label">Helyes válasz üzenet</span>
+                    <textarea
+                      value={d.correct_answer_message}
+                      onChange={(e) => {
+                        const v = e.target.value
+                        setMsgDrafts((prev) =>
+                          prev.map((x) => (x.generation === d.generation ? { ...x, correct_answer_message: v } : x)),
+                        )
+                      }}
+                      rows={2}
+                      spellCheck
+                      placeholder="opcionális"
+                    />
+                  </label>
+                  <label className="field sentenceGenMsgField">
+                    <span className="label">Helytelen válasz üzenet</span>
+                    <textarea
+                      value={d.incorrect_answer_message}
+                      onChange={(e) => {
+                        const v = e.target.value
+                        setMsgDrafts((prev) =>
+                          prev.map((x) =>
+                            x.generation === d.generation ? { ...x, incorrect_answer_message: v } : x,
+                          ),
+                        )
+                      }}
+                      rows={2}
+                      spellCheck
+                      placeholder="opcionális"
+                    />
+                  </label>
+                </div>
+              ))}
+            </div>
+            <div className="sentenceGenMsgActions">
+              <button type="button" className="primary" disabled={msgSaveBusy} onClick={() => void saveGenMessages()}>
+                {msgSaveBusy ? 'Mentés…' : 'Mentés'}
+              </button>
+            </div>
+          </div>
+        )}
+      </aside>
+    )
+
   return (
     <>
       <p className="muted" style={{ margin: '0 0 10px', fontSize: 13 }}>
@@ -227,75 +834,10 @@ function SentenceModalContent(props: {
         </AlertBanner>
       ) : null}
 
-      {sentencesBusy ? (
-        <p className="muted">Betöltés…</p>
-      ) : sentencesMaxGen === 0 ? (
-        <p className="muted">Nincs generációs adat ehhez a listához.</p>
-      ) : sentencesPaths.length === 0 ? (
-        <p className="muted">
-          {sentencesMaxGen >= 2
-            ? `Nincs egyetlen teljes lánc sem GEN1 → GEN${sentencesMaxGen} irányban a megadott relációkkal.`
-            : 'Nincs GEN1 szó ehhez a listához.'}
-        </p>
-      ) : (
-        <>
-          <div className="sentenceFiltersBar">
-            <span className="sentenceFiltersBar__title muted">Oszlopszűrő (gépelésre azonnal szűkül)</span>
-            <button
-              type="button"
-              className="counter sentenceFiltersBar__clear"
-              onClick={() => setFilters(Array(sentencesMaxGen).fill(''))}
-            >
-              Törlés
-            </button>
-          </div>
-          <div className="sentenceFiltersGrid" style={{ marginBottom: 10 }}>
-            {Array.from({ length: sentencesMaxGen }, (_, i) => i + 1).map((gen) => (
-              <label key={`sf-gen-${gen}`} className="field sentenceFilterField">
-                <span className="label">GEN{gen}</span>
-                <input
-                  type="text"
-                  inputMode="search"
-                  enterKeyHint="search"
-                  value={filters[gen - 1] ?? ''}
-                  onChange={(e) => {
-                    const v = e.target.value
-                    setFilters((prev) => {
-                      const next = [...prev]
-                      while (next.length < sentencesMaxGen) next.push('')
-                      next[gen - 1] = v
-                      return next
-                    })
-                  }}
-                  placeholder="szűrő…"
-                  autoComplete="off"
-                  spellCheck={false}
-                />
-              </label>
-            ))}
-          </div>
-          <p className="muted" style={{ margin: '0 0 8px', fontSize: 13 }}>
-            Megjelenítve <strong>{filteredPaths.length}</strong> / {sentencesPaths.length} mondat.
-          </p>
-          <div className="sentencesScroll">
-            {filteredPaths.length === 0 ? (
-              <p className="muted" style={{ margin: 0 }}>
-                Nincs a szűrőnek megfelelő mondat.
-              </p>
-            ) : (
-              filteredPaths.map((words, idx) => (
-                <div className="sentenceRow" key={`sent-${idx}-${words.join('\u0000')}`}>
-                  {words.map((w, i) => (
-                    <span key={`sent-${idx}-g${i}`} className="sentenceWordPill" title={`GEN${i + 1}`}>
-                      {w}
-                    </span>
-                  ))}
-                </div>
-              ))
-            )}
-          </div>
-        </>
-      )}
+      <div className="sentenceModalLayout">
+        <div className="sentenceModalMainCol">{sentencesBlock}</div>
+        {genAside}
+      </div>
     </>
   )
 }
@@ -358,6 +900,23 @@ export function ListsWordsAdmin(props: Props) {
   const [sentencesListName, setSentencesListName] = useState('')
   const [sentencesPaths, setSentencesPaths] = useState<string[][]>([])
   const [sentencesMaxGen, setSentencesMaxGen] = useState(0)
+  const [sentencesListId, setSentencesListId] = useState<number | null>(null)
+  const [sentencesGenMessages, setSentencesGenMessages] = useState<WordGenMessageRow[] | null>(null)
+  const [sentencesGenMsgLoadError, setSentencesGenMsgLoadError] = useState<string | null>(null)
+  const [pendingDeleteList, setPendingDeleteList] = useState<WordList | null>(null)
+  const [deletePreview, setDeletePreview] = useState<{
+    generationCount: number
+    wordCount: number
+    relationCount: number
+    genMessageGensWithText: number
+    hasWordlist: boolean
+    hasNotes: boolean
+  } | null>(null)
+  const [deletePreviewLoading, setDeletePreviewLoading] = useState(false)
+  const [deletePreviewError, setDeletePreviewError] = useState<string | null>(null)
+  const [wordlistFriendlyOpen, setWordlistFriendlyOpen] = useState(false)
+  const [wordlistFriendlyPayload, setWordlistFriendlyPayload] = useState<WordlistFriendlyPayload | null>(null)
+  const [wordlistFriendlyPrepBusy, setWordlistFriendlyPrepBusy] = useState(false)
 
   function isPublicFlag(value: WordList['public']): boolean {
     return value === true || value === 1
@@ -765,8 +1324,56 @@ export function ListsWordsAdmin(props: Props) {
     void executeWordlistGenerateFromParsed(p.listId, p.generationsPayload, p.parsed)
   }
 
-  async function confirmAndDeleteList(list: WordList) {
-    if (!confirm(`Biztosan törlöd a listát? (${list.name})`)) return
+  async function beginDeleteList(list: WordList) {
+    setPendingDeleteList(list)
+    setDeletePreview(null)
+    setDeletePreviewError(null)
+    setDeletePreviewLoading(true)
+    try {
+      const [wordsRes, rels, msgRes, fullList] = await Promise.all([
+        listWords(token, list.id),
+        listWordRelations(token, list.id),
+        listWordGenMessages(token, list.id).catch(() => ({
+          list_id: list.id,
+          generations: [] as WordGenMessageRow[],
+        })),
+        getList(token, list.id),
+      ])
+      const generationCount = wordsRes.generations.length
+      const wordCount = wordsRes.generations.reduce((acc, g) => acc + g.words.length, 0)
+      let genMessageGensWithText = 0
+      for (const row of msgRes.generations) {
+        const c = (row.correct_answer_message ?? '').trim()
+        const i = (row.incorrect_answer_message ?? '').trim()
+        if (c || i) genMessageGensWithText++
+      }
+      const wl = (fullList.wordlist ?? '').trim()
+      const notes = (fullList.notes ?? '').trim()
+      setDeletePreview({
+        generationCount,
+        wordCount,
+        relationCount: rels.length,
+        genMessageGensWithText,
+        hasWordlist: wl.length > 0,
+        hasNotes: notes.length > 0,
+      })
+    } catch (err) {
+      setDeletePreviewError(toUiError(err, 'Az előnézet betöltése sikertelen'))
+    } finally {
+      setDeletePreviewLoading(false)
+    }
+  }
+
+  function cancelDeleteList() {
+    setPendingDeleteList(null)
+    setDeletePreview(null)
+    setDeletePreviewError(null)
+    setDeletePreviewLoading(false)
+  }
+
+  async function executeDeleteList() {
+    const list = pendingDeleteList
+    if (!list) return
     setFlash(null)
     setBusy(true)
     try {
@@ -777,6 +1384,8 @@ export function ListsWordsAdmin(props: Props) {
         setGenerationDrafts([])
         setWordsData(null)
       }
+      cancelDeleteList()
+      setFlash({ variant: 'success', message: `A(z) „${list.name}” lista törölve.` })
     } catch (err) {
       setFlash({ variant: 'error', message: toUiError(err, 'Sikertelen törlés') })
     } finally {
@@ -849,6 +1458,9 @@ export function ListsWordsAdmin(props: Props) {
     setSentencesError(null)
     setSentencesPaths([])
     setSentencesMaxGen(0)
+    setSentencesListId(null)
+    setSentencesGenMessages(null)
+    setSentencesGenMsgLoadError(null)
   }
 
   async function openSentencesView(list: WordList) {
@@ -856,16 +1468,34 @@ export function ListsWordsAdmin(props: Props) {
     setSentencesBusy(true)
     setSentencesError(null)
     setSentencesListName(list.name)
+    setSentencesListId(list.id)
     setSentencesPaths([])
     setSentencesMaxGen(0)
+    setSentencesGenMessages(null)
+    setSentencesGenMsgLoadError(null)
     try {
       const [words, rels] = await Promise.all([listWords(token, list.id), listWordRelations(token, list.id)])
       const maxG = words.generations.length > 0 ? Math.max(...words.generations.map((g) => g.generation)) : 0
       setSentencesMaxGen(maxG)
       setSentencesPaths(enumerateFullRelationPaths(words, rels))
+      if (maxG === 0) {
+        setSentencesGenMessages([])
+        setSentencesGenMsgLoadError(null)
+      } else {
+        try {
+          const msgRes = await listWordGenMessages(token, list.id)
+          setSentencesGenMessages(msgRes.generations)
+          setSentencesGenMsgLoadError(null)
+        } catch (msgErr) {
+          setSentencesGenMsgLoadError(toUiError(msgErr, 'GEN üzenetek betöltése sikertelen'))
+          setSentencesGenMessages(emptyGenMessageRows(maxG))
+        }
+      }
     } catch (err) {
       setSentencesError(toUiError(err, 'Sikertelen mondatok betöltés'))
       setSentencesPaths([])
+      setSentencesGenMessages(null)
+      setSentencesGenMsgLoadError(null)
     } finally {
       setSentencesBusy(false)
     }
@@ -976,10 +1606,48 @@ export function ListsWordsAdmin(props: Props) {
       setSentencesError(null)
       setSentencesPaths([])
       setSentencesMaxGen(0)
+      setSentencesListId(null)
+      setSentencesGenMessages(null)
+      setSentencesGenMsgLoadError(null)
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [sentencesOpen])
+
+  useEffect(() => {
+    if (!wordlistFriendlyOpen) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return
+      setWordlistFriendlyOpen(false)
+      setWordlistFriendlyPayload(null)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [wordlistFriendlyOpen])
+
+  function closeWordlistFriendlyModal() {
+    setWordlistFriendlyOpen(false)
+    setWordlistFriendlyPayload(null)
+  }
+
+  async function openWordlistFriendlyModal() {
+    if (!selectedList) return
+    setWordlistFriendlyPrepBusy(true)
+    try {
+      const payload = await buildFriendlyWordlistInitial({
+        token,
+        listId: selectedList.id,
+        wordlistDraft: listWordlistDraft,
+        wordsData: wordsData,
+      })
+      setWordlistFriendlyPayload(payload)
+      setWordlistFriendlyOpen(true)
+    } catch (err) {
+      setFlash({ variant: 'error', message: toUiError(err, 'Nem sikerült előkészíteni a táblázatot') })
+    } finally {
+      setWordlistFriendlyPrepBusy(false)
+    }
+  }
 
   const treeLayout = useMemo(() => {
     const generations = treeWordsData?.generations ?? []
@@ -1152,7 +1820,11 @@ export function ListsWordsAdmin(props: Props) {
               </thead>
               <tbody>
                 {lists.map((l) => (
-                  <tr key={l.id}>
+                  <tr
+                    key={l.id}
+                    className={selectedListId === l.id ? 'listPickRow listPickRow--selected' : 'listPickRow'}
+                    aria-current={selectedListId === l.id ? true : undefined}
+                  >
                     <td>
                       <button
                         className={selectedListId === l.id ? 'menuItem menuItem--active' : 'menuItem'}
@@ -1180,9 +1852,13 @@ export function ListsWordsAdmin(props: Props) {
                           Fa nézet
                         </button>
                         <button type="button" className="counter" onClick={() => void openSentencesView(l)} disabled={busy}>
-                          Mondatok
+                          GEN üzenetek / mondatok
                         </button>
-                        <button className="danger" onClick={() => void confirmAndDeleteList(l)} disabled={busy}>
+                        <button
+                          className="danger"
+                          onClick={() => void beginDeleteList(l)}
+                          disabled={busy || pendingDeleteList !== null}
+                        >
                           Törlés
                         </button>
                       </div>
@@ -1229,20 +1905,34 @@ export function ListsWordsAdmin(props: Props) {
                     className="listNotesArea"
                   />
                 </label>
-                <label className="field">
-                  <span className="label">Wordlist (szöveg)</span>
+                <div className="field">
+                  <div className="row row--spread" style={{ alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+                    <span className="label" style={{ marginBottom: 0 }}>
+                      Wordlist (szöveg)
+                    </span>
+                    <button
+                      type="button"
+                      className="counter"
+                      disabled={busy || wordlistFriendlyPrepBusy}
+                      onClick={() => void openWordlistFriendlyModal()}
+                    >
+                      {wordlistFriendlyPrepBusy ? 'Táblázat…' : 'Felhasználóbarát'}
+                    </button>
+                  </div>
                   <p className="muted" style={{ margin: '0 0 6px', fontSize: 13, lineHeight: 1.4 }}>
                     A <code>;</code> a GEN elválasztó. A <code>*</code>-gal kezdődő sor csak szavakat vesz fel a generációkba (kakuktojás),{' '}
                     <strong>relációt nem alkot</strong> — élek csak a * nélküli sorokból.
                   </p>
                   <textarea
+                    id="adminListWordlistDraft"
                     value={listWordlistDraft}
                     onChange={(e) => setListWordlistDraft(e.target.value)}
                     rows={6}
                     placeholder="pl. door;world;sun;…"
                     className="listWordlistArea"
+                    aria-label="Wordlist szöveg"
                   />
-                  <div className="row" style={{ marginTop: 8 }}>
+                  <div className="row" style={{ marginTop: 8, flexWrap: 'wrap', gap: 8 }}>
                     <button
                       type="button"
                       className="primary"
@@ -1252,7 +1942,7 @@ export function ListsWordsAdmin(props: Props) {
                       Szavak és relációk generálása a wordlistből
                     </button>
                   </div>
-                </label>
+                </div>
                 <div className="row">
                   <button className="primary" disabled={busy}>
                     {busy ? 'Mentés…' : 'Lista adatainak mentése'}
@@ -1497,6 +2187,87 @@ export function ListsWordsAdmin(props: Props) {
 
       {createPortal(
         <>
+          <ConfirmModal
+            open={pendingDeleteList !== null}
+            title="Lista törlése"
+            tone="danger"
+            confirmLabel="Törlés"
+            busy={busy || deletePreviewLoading}
+            onCancel={cancelDeleteList}
+            onConfirm={() => void executeDeleteList()}
+          >
+            {pendingDeleteList ? (
+              <>
+                <p className="muted" style={{ margin: '0 0 12px' }}>
+                  Biztosan törlöd a <strong>{pendingDeleteList.name}</strong> szólistát? Ez nem vonható vissza.
+                </p>
+                <p className="muted" style={{ margin: '0 0 10px', fontSize: 14 }}>
+                  A szerver a listával együtt törli a szavakat, a relációkat és a generációs üzeneteket is (lásd API).
+                  A lista rekordhoz tartozó megjegyzés és wordlist szöveg is elvész.
+                </p>
+                {deletePreviewLoading ? (
+                  <p className="muted" style={{ margin: 0 }}>
+                    Adatok betöltése a figyelmeztetéshez…
+                  </p>
+                ) : null}
+                {deletePreviewError ? (
+                  <p className="muted" style={{ margin: '10px 0 0', color: 'var(--text-h)' }}>
+                    {deletePreviewError} — a törlés ettől még végrehajtható.
+                  </p>
+                ) : null}
+                {!deletePreviewLoading && deletePreview ? (
+                  <div className="deleteListPreview">
+                    <div className="deleteListPreview__title">Ehhez a listához tartozó adatok (törlődnek):</div>
+                    <ul className="deleteListPreview__list">
+                      <li>
+                        Generációk és szavak: <strong>{deletePreview.generationCount}</strong> generáció,{' '}
+                        <strong>{deletePreview.wordCount}</strong> szó
+                      </li>
+                      {deletePreview.relationCount > 0 ? (
+                        <li>
+                          Relációk: <strong>{deletePreview.relationCount}</strong> db
+                        </li>
+                      ) : (
+                        <li className="muted">Relációk: nincs</li>
+                      )}
+                      {deletePreview.genMessageGensWithText > 0 ? (
+                        <li>
+                          Generációs üzenetek: <strong>{deletePreview.genMessageGensWithText}</strong> generációnál van
+                          kitöltött szöveg
+                        </li>
+                      ) : (
+                        <li className="muted">Generációs üzenetek: nincs kitöltött mező</li>
+                      )}
+                      {deletePreview.hasWordlist ? (
+                        <li>
+                          Wordlist (szöveg): <strong>van tárolt tartalom</strong> — törlődik
+                        </li>
+                      ) : (
+                        <li className="muted">Wordlist (szöveg): üres</li>
+                      )}
+                      {deletePreview.hasNotes ? (
+                        <li>
+                          Megjegyzés (notes): <strong>van tartalom</strong> — törlődik
+                        </li>
+                      ) : (
+                        <li className="muted">Megjegyzés (notes): üres</li>
+                      )}
+                    </ul>
+                  </div>
+                ) : null}
+              </>
+            ) : null}
+          </ConfirmModal>
+
+          {wordlistFriendlyOpen && wordlistFriendlyPayload ? (
+            <WordlistFriendlyModal
+              open
+              payload={wordlistFriendlyPayload}
+              onClose={closeWordlistFriendlyModal}
+              onApply={(text) => setListWordlistDraft(text)}
+            />
+          ) : null}
+
           {treeOpen ? (
             <div
               className="confirmModal__root"
@@ -1698,7 +2469,7 @@ export function ListsWordsAdmin(props: Props) {
               >
                 <div className="row row--spread" style={{ marginBottom: 10 }}>
                   <h3 id="sentencesModalTitle" className="confirmModal__title" style={{ margin: 0 }}>
-                    Mondatok — {sentencesListName}
+                    GEN üzenetek / mondatok — {sentencesListName}
                   </h3>
                   <button type="button" className="danger" onClick={closeSentencesModal}>
                     × Bezárás
@@ -1706,11 +2477,18 @@ export function ListsWordsAdmin(props: Props) {
                 </div>
 
                 <SentenceModalContent
+                  token={token}
+                  listId={sentencesListId ?? 0}
                   sentencesBusy={sentencesBusy}
                   sentencesError={sentencesError}
                   sentencesMaxGen={sentencesMaxGen}
                   sentencesPaths={sentencesPaths}
+                  genMsgLoadError={sentencesGenMsgLoadError}
+                  genMessageRows={sentencesBusy ? null : sentencesGenMessages}
                   onDismissError={() => setSentencesError(null)}
+                  onDismissGenMsgError={() => setSentencesGenMsgLoadError(null)}
+                  onGenMessagesSaved={(rows) => setSentencesGenMessages(rows)}
+                  toUiError={toUiError}
                 />
               </div>
             </div>

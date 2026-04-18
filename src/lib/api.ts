@@ -61,6 +61,18 @@ export type WordGenerationsResponse = {
   generations: WordGeneration[]
 }
 
+/** Generációnkénti helyes/helytelen válasz szövegek (`word_gen_messages`). */
+export type WordGenMessageRow = {
+  generation: number
+  correct_answer_message: string | null
+  incorrect_answer_message: string | null
+}
+
+export type WordGenMessagesResponse = {
+  list_id: number
+  generations: WordGenMessageRow[]
+}
+
 export type WordRelation = {
   id: number
   list_id: number
@@ -554,6 +566,47 @@ export async function replaceWordGenerations(
   }
 
   return await parseJson<WordGenerationsResponse>(res)
+}
+
+export async function listWordGenMessages(token: string, listId: number): Promise<WordGenMessagesResponse> {
+  const res = await fetch(`${API_BASE_URL}/lists/${listId}/word-gen-messages`, {
+    headers: {
+      ...authHeaders(token),
+    },
+  })
+
+  if (!res.ok) {
+    throw new Error(await parseErrorMessage(res, 'Word gen messages fetch failed'))
+  }
+
+  return await parseJson<WordGenMessagesResponse>(res)
+}
+
+export async function putWordGenMessages(
+  token: string,
+  listId: number,
+  params: {
+    generations: Array<{
+      generation: number
+      correct_answer_message?: string | null
+      incorrect_answer_message?: string | null
+    }>
+  },
+): Promise<WordGenMessagesResponse> {
+  const res = await fetch(`${API_BASE_URL}/lists/${listId}/word-gen-messages`, {
+    method: 'PUT',
+    headers: {
+      ...authHeaders(token),
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(params),
+  })
+
+  if (!res.ok) {
+    throw new Error(await parseErrorMessage(res, 'Word gen messages update failed'))
+  }
+
+  return await parseJson<WordGenMessagesResponse>(res)
 }
 
 export async function listWordRelations(

@@ -1,0 +1,30 @@
+Van az api-list-wird.md be uj api hivasok 
+
+word_gen_messages
+a word list szerkesztesnel kell lehetoseget biztositani arra, hogy a letezo generacioknak
+GEN1 tol GENn ig minden GEN nek adni ket text mezot:
+correct_answer_message
+incorrect_answer_message
+text tipusu
+ezt kell lehessen szerkeszteni a word-list be megpedig a MOndatok gombal levo resznel
+a mondatok mellet jobra ven meg eleg hely erre
+oda kell betenni annyi generacos inputot ahany generacio van, minden genercionak 2 inputot
+ez alapbol nem jelenik meg henem lessz egy gomd (GEN uzenetek szerkesztese), erre katintva megjelenik
+amikor valamelyik generacios input mezo kerul fokuszba akkor a mondatoknak azon generacios szavai halvany szinnel kiszinezodnek, hogy lassa a felhasznalo
+ha egy masik generacios inputba kerul a kurzor akkkor annak megfelelo geerasos szavak lesznek kiszinezve
+
+ezeket lehessen menteni, majd lehessen elrejteni is az inputokat
+
+
+uj feladat:
+Kell a Wordlist (szoveg) melle egy nyomogomb: Felhasznalobarat
+ekkor meg kell jelenjen egy modalis ablak amibe lesznek sorok es oszlopok input mezok
+ide wordlist ertekeit kell atvinni ha vannak annyi generacioval ahany van a word listbe
+ha ures a wordlist de vannak szavak es relaciok akkor a relaciokbol eloalitott modatok input mzore bontva
+ha teljesen ures akkor 3 gen jelenjen meg de midenkepp lehetoseg lehgyen bovitesre
+lehessen sorokat is ujat bevinni
+
+a tablazat alatt legyen meg egy ami a kakuktojas szavakat taartalmazza
+
+ha ezeket kitoltom es mentem atviszi a wordlist (szavak) tezt mezojebe a mefgelelo formatumba ahogy oda jobr
+

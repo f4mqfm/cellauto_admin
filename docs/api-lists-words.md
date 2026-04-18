@@ -2,40 +2,13 @@
 
 Ez a rész a szólisták (`lists`) és a listán belüli szavak (`words`) végpontjait írja le.
 
-A termék-követelmények összefoglalója a [`wordlist.txt`](./wordlist.txt) fájlban van; e dokumentum az API szerződését rögzíti.
-
-## Követelmények összefoglalója (spec)
-
-- **Lista neve** (`name`) változatlan fogalom: egy szólistának van neve (pl. „Angol szavak”).
-- **Szavak generációkban**: egy listához GEN1 … GENN tartozik; **legalább egy szó** kell generációnként; a generációk **1-től N-ig** folytonosan bővíthetők.
-- **`public`**: logikai mező a listán; alapból **false**, API-ból állítható.
-- **Relációk** csak **szomszédos generációk** között: GEN1→GEN2, GEN2→GEN3, … (nem lehet kihagyott generáció vagy kereszt-generáció).
-- **`notes`**: többsoros megjegyzés (textarea); az API **csak tárolja**, nem értelmezi.
-- **`wordlist`**: nagy szövegmező; a felhasználó ide viheti előre összeállított, **pontosvesszővel** tagolt szavakat / generációkat. A **`*` karakterrel kezdődő sorok** az admin oldal „kakuktojás” szabályai szerinti változatok (ugyanolyan struktúra, de nem minden pozíció kötelező); **az API számára ez csak sima szöveg**, nincs szerver oldali szemantika.
-
-### Admin felület (UX, nem API-kényszer)
-
-- A **`notes`** mező tipikusan **2–3 soros** textarea.
-- A **`wordlist`** mező tipikusan **kb. 6 soros**, **átméretezhető** textarea.
-- Rövid magyarázat a wordlisthez: a **`;` a GEN elválasztó**; a **`*`-gal kezdődő sorok** kakuktojás szóként csak a generációs szavakat bővítik (üres `;` közök engedettek), **relációt nem alkotnak**. Élek csak * nélküli sorok szomszédos oszlopai közül.
-- **„Szavak és relációk generálása a wordlistből”** gomb az adminban: a szöveget kliens oldalon értelmezi (oszlopok; * nélküli sorokban szomszédos oszlopok között irányított élek), majd feltölti a szavakat és a relációkat. Ha már vannak szavak (és esetleg relációk), **megerősítés** után felülírja őket.
-
----
-
-## Adatmodell – lista (`lists`)
-
-- `id`, `user_id`, `name`
-- **`public`** (boolean, tipikusan alapértelmezés: `false`)
-- **`notes`** (string, nullable) – többsoros szöveg
-- **`wordlist`** (string, nullable) – nagy szövegblokk (admin szerkesztéshez)
-
-## Adatmodell – szavak (`words`) – generációk
+## Adatmodell (`words`) – generációk
 
 - `list_id`, `generation`, `word`
 - `generation` (INT, >= 1) – GEN1..GENN logika
 - `word` azonos generáción belül egyedi (`UNIQUE(list_id, generation, word)`)
 
-Egy szólista generációi 1-től N-ig folytonosan kezelhetők.
+Egy szóliszta generációi 1-től N-ig folytonosan kezelhetők.
 
 ## Auth
 
@@ -54,23 +27,11 @@ Authorization: Bearer <TOKEN>
 A lista rekordban két opcionális szövegmező van; az API **nem értelmezi** a tartalmukat, csak tárolja és visszaadja (az admin felület dolgozik belőlük):
 
 - **`notes`**: többsoros megjegyzés (textarea), tetszőleges szöveg.
-- **`wordlist`**: egy nagy szövegblokk; a felhasználó ide viheti előre összeállított szavakat. **Konvenció** (admin UI, nem API validáció):
-  - a **`;` (pontosvessző)** a **GEN (oszlop) elválasztója**;
-  - a **`*` karakterrel kezdődő sorok** az admin generátornál csak szókészletet adnak (ugyanaz az oszlop-struktúra, üres `; … ;` cellákkal is), relációt nem alkotnak; az API a szöveget csak tárolja.
+- **`wordlist`**: egy nagy szövegblokk; a felhasználó ide viheti előre összeállított, pontosvesszővel elválasztott szavakat / sorokat. A `*` prefixű sorok jelentése az admin UI szabálya; az API számára ez csak sima szöveg.
 
 ### GET `/api/lists`
 
 A bejelentkezett user **saját listái**.
-
-- **200 OK**: lista tömb (elemekben: `id`, `user_id`, `name`, `public`, `notes`, `wordlist`, …)
-
-### GET `/api/public-lists`
-
-**Más felhasználók** által **publikusnak** jelölt listák – pl. www kliens; **az admin lista-nézet nem ezt** használja a saját listákra.
-
-- **Auth**: kötelező (bejelentkezett user).
-- **Szűrés**: `public === true` és a lista **nem** a hívó user tulajdona (`user_id != aktuális user`).
-- **200 OK**: lista tömb; gyakran kiegészítve tulajdonos mezőkkel: `owner_username`, `owner_name`, `owner_email` (a részletes mezőnév a backend válaszától függ).
 
 ### POST `/api/lists`
 
@@ -80,7 +41,7 @@ Lista létrehozása.
   - `name` (string, kötelező, max 255)
   - `public` (boolean, opcionális, default: `false`)
   - `notes` (string, opcionális, többsor is lehet)
-  - `wordlist` (string, opcionális, nagy szöveg; pl. pontosvesszővel tagolt szavak generációnként)
+  - `wordlist` (string, opcionális, nagy szöveg; pl. pontosvesszővel tagolt szavak)
 
 - **201 Created válasz**
   - lista rekord (legalább: `id`, `user_id`, `name`, `public`, `notes`, `wordlist`)
@@ -91,7 +52,7 @@ Példa:
 curl -X POST http://localhost:8000/api/lists \
   -H "Authorization: Bearer <TOKEN>" \
   -H "Content-Type: application/json" \
-  -d '{"name":"angol szavak","public":true,"notes":"Saját jegyzet","wordlist":"door;world;sun;kes;villa"}'
+  -d '{"name":"angol szavak","public":true}'
 ```
 
 ### GET `/api/lists/{list}`
@@ -99,7 +60,7 @@ curl -X POST http://localhost:8000/api/lists \
 Egy lista lekérése **a szavaival együtt** (`words` reláció betöltve, generáció szerint rendezve).
 
 - **Jogosultság**
-  - Ha a lista nem a useré és nem `public`: **403** `{"error":"Nincs jogosultság"}`
+  - Ha a lista nem a useré: **403** `{"error":"Nincs jogosultság"}`
 
 ### PUT `/api/lists/{list}`
 
@@ -120,6 +81,7 @@ Lista törlése.
 
 - **Mellékhatás**
   - a lista összes szava is törlődik (`words` rekordok)
+  - a `word_gen_messages` rekordok is törlődnek (FK)
 
 - **Jogosultság**
   - Ha nem a useré: **403**
@@ -226,13 +188,80 @@ Szó törlése.
   - Ha a `{word}` nem ehhez a listához tartozik: **404**
   - Ha az adott generációban ez az utolsó szó lenne: **422**
 
+## Generációs üzenetek (`word_gen_messages`)
+
+Minden létező generációhoz (GEN1..GENn, a szavak szerint) két opcionális szöveg tárolható: helyes / helytelen válasz üzenet.
+
+- **Adatmodell**: `lists_word.id` + `generation` egyedi; `correct_answer_message`, `incorrect_answer_message` (TEXT, nullable).
+
+### GET `/api/lists/{list}/word-gen-messages`
+
+Üzenetek lekérése generációnként (a lista szavainak generációstruktúrájához igazítva).
+
+- **200 OK** – példa:
+
+```json
+{
+  "list_id": 1,
+  "generations": [
+    {
+      "generation": 1,
+      "correct_answer_message": "Így is lehet.",
+      "incorrect_answer_message": "Próbáld újra."
+    },
+    {
+      "generation": 2,
+      "correct_answer_message": null,
+      "incorrect_answer_message": null
+    }
+  ]
+}
+```
+
+- **Jogosultság**: olvasás ugyanaz, mint a listánál (`canReadList`: saját vagy publikus).
+- **422**: ha a `words` táblában a generációk nem folytonosak 1-től N-ig (adat‑inkonzisztencia).
+
+### PUT `/api/lists/{list}/word-gen-messages`
+
+Összes generációs üzenet mentése egyben (lista tulajdonosa).
+
+- **Body**
+  - `generations`: tömb – minden elem:
+    - `generation` (integer, kötelező, >= 1)
+    - `correct_answer_message` (string, opcionális / null)
+    - `incorrect_answer_message` (string, opcionális / null)
+
+- **Szabályok**
+  - A tömb elemszáma és a `generation` értékek meg kell egyezzenek a lista aktuális szó-generációival (1..N, ahogy a GET `/lists/{list}/words` is várja).
+  - Ha még nincs egyetlen szó sem a listában: `generations` csak üres tömb (`[]`) lehet; ekkor az üzenettáblában lévő sorok törlődnek.
+  - Mentés után a válasz megegyezik a GET `word-gen-messages` formátumával (**200 OK**).
+
+- **Jogosultság**
+  - Csak a lista tulajdonosa: **403** egyébként.
+
+Példa:
+
+```bash
+curl -X PUT http://localhost:8000/api/lists/1/word-gen-messages \
+  -H "Authorization: Bearer <TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "generations": [
+      { "generation": 1, "correct_answer_message": "Szép!", "incorrect_answer_message": "Rossz." },
+      { "generation": 2, "correct_answer_message": null, "incorrect_answer_message": null }
+    ]
+  }'
+```
+
+**Megjegyzés:** Ha a teljes szóstruktúrát `PUT /lists/{list}/word-generations` frissíti, és csökken a generációk száma, a már nem létező generációkhoz tartozó üzenetsorok automatikusan törlődnek.
+
 ## Szó-relációk (GENn -> GENn+1)
 
-A relációkat csak **szomszédos generációk** között lehet megadni (példa a specből: GEN1-ből egy „one” szóhoz több GEN2 cél; GEN2→GEN3 hasonlóan):
+A relációkat csak **szomszédos generációk** között lehet megadni:
 
 - `GEN1 -> GEN2`
 - `GEN2 -> GEN3`
-- …
+- ...
 
 ### GET `/api/lists/{list}/word-relations`
 
@@ -296,22 +325,14 @@ Válasz:
 }
 ```
 
-### Lista létrehozása public flaggel és szövegmezőkkel
+### Lista létrehozása public flaggel
 
 ```bash
 curl -X POST http://localhost:8000/api/lists \
   -H "Authorization: Bearer <TOKEN>" \
   -H "Content-Type: application/json" \
   -H "Accept: application/json" \
-  -d '{"name":"Angol szavak","public":true,"notes":"Saját megjegyzés","wordlist":"door;world;sun;kes;villa"}'
-```
-
-### Publikus listák (más tulajdonosoktól)
-
-```bash
-curl -X GET http://localhost:8000/api/public-lists \
-  -H "Authorization: Bearer <TOKEN>" \
-  -H "Accept: application/json"
+  -d '{"name":"Angol szavak","public":true}'
 ```
 
 ### 2) Szavak hozzáadása adott generációhoz
@@ -360,4 +381,4 @@ curl -X DELETE http://localhost:8000/api/lists/1/words/101 \
 
 ## Hol legyen ez dokumentálva?
 
-Ezt a modul-specifikus API dokumentációt a `docs/api-lists-words.md` fájlban kell karbantartani; a követelmény-forrás a `docs/wordlist.txt`.
+Ezt a modul-specifikus API dokumentációt a `docs/api-lists-words.md` fájlban kell karbantartani.
