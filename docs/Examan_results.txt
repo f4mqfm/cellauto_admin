@@ -1,0 +1,32 @@
+A Vizsgák megtekintése menube a fejlec igy nez ki most:
+Dátum	Tanuló	Feladat	Csoport	Szint	Idő (mp)	Cella jó / rossz	Mondat jó / rossz
+
+Igy legyen:
+Dátum	Tanuló	Feladat		Idő (mp)	Cella     Mondat  megjegyzes
+
+Cella:
+ha a total_good_cell = 0 akkor: vonalka
+na nem zero akkor:
+= (good_cell − bad_cell − unfilled_cell) / total_good_cell × 100    %
+
+MOndat:
+ha a possible_sentence = 0: vonalka
+ha nem: (good_sentence / possible_sentence) / 100   %
+
+A felso szurok nem kellnek
+helyette oszlopszuro kell
+
+ha rakatintok egy elemre egyelore ne tortenjen semmi, alul ne nyiljon ki a tartalmazhatnak
+
+hanem egy modalis ablakba jelenjenek meg a parameterek:
+a json ertek nem kell 
+
+
+Modositas a modalis ablak tartalmaba:
+
+Tanuló
+Név	Admin Aladár (Felhasználónév)
+Feladat 	15 word / csoport / szint
+
+A Mondatok.png be van egy pelda miyen stilusba ird ki a szoveget alul
+

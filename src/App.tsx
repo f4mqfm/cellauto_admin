@@ -6,6 +6,7 @@ import { UsersAdmin } from './admin/UsersAdmin'
 import { ListsWordsAdmin } from './lists/ListsWordsAdmin'
 import { ColorListsAdmin } from './colorLists/ColorListsAdmin'
 import { AccessLogsAdmin } from './admin/AccessLogsAdmin'
+import { TaskEvaluationsAdmin } from './admin/TaskEvaluationsAdmin'
 
 function App() {
   const [loginValue, setLoginValue] = useState('')
@@ -14,7 +15,9 @@ function App() {
   const [error, setError] = useState<string | null>(null)
   const [token, setToken] = useState<string | null>(null)
   const [user, setUser] = useState<User | null>(null)
-  const [activePage, setActivePage] = useState<'users' | 'lists' | 'colorLists' | 'accessLogs' | null>(null)
+  const [activePage, setActivePage] = useState<'users' | 'lists' | 'colorLists' | 'examEvaluations' | 'accessLogs' | null>(
+    null,
+  )
 
   useEffect(() => {
     const auth = loadAuth()
@@ -38,6 +41,11 @@ function App() {
   }, [])
 
   const isAuthed = useMemo(() => Boolean(token && user), [token, user])
+
+  const canViewExamEvaluations = useMemo(
+    () => Boolean(user && (user.role === 'admin' || user.role === 'tanar')),
+    [user],
+  )
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
@@ -125,6 +133,16 @@ function App() {
               >
                 Színlisták
               </button>
+              {canViewExamEvaluations ? (
+                <button
+                  type="button"
+                  className={activePage === 'examEvaluations' ? 'menuItem menuItem--active' : 'menuItem'}
+                  onClick={() => setActivePage('examEvaluations')}
+                  disabled={busy}
+                >
+                  Vizsgák megtekintése
+                </button>
+              ) : null}
               <button
                 type="button"
                 className={activePage === 'accessLogs' ? 'menuItem menuItem--active' : 'menuItem'}
@@ -209,6 +227,19 @@ function App() {
                   <span className="menuCard__title">Színlisták</span>
                   <span className="menuCard__desc">Színkészletek módosítása és rendezése.</span>
                 </button>
+                {canViewExamEvaluations ? (
+                  <button
+                    type="button"
+                    className={activePage === 'examEvaluations' ? 'menuCard menuCard--active' : 'menuCard'}
+                    onClick={() => setActivePage('examEvaluations')}
+                    disabled={busy}
+                  >
+                    <span className="menuCard__title">Vizsgák megtekintése</span>
+                    <span className="menuCard__desc">
+                      Mentett vizsgaértékelések listája és részletes megtekintő (tanár / admin).
+                    </span>
+                  </button>
+                ) : null}
                 <button
                   type="button"
                   className={activePage === 'accessLogs' ? 'menuCard menuCard--active' : 'menuCard'}
@@ -235,6 +266,8 @@ function App() {
                   <ListsWordsAdmin token={token} />
                 ) : activePage === 'colorLists' && token ? (
                   <ColorListsAdmin token={token} />
+                ) : activePage === 'examEvaluations' && token && canViewExamEvaluations ? (
+                  <TaskEvaluationsAdmin token={token} />
                 ) : activePage === 'accessLogs' && token ? (
                   <AccessLogsAdmin token={token} />
                 ) : null}

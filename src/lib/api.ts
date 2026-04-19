@@ -784,3 +784,104 @@ export async function deletePaletteColor(
   if (!res.ok) throw new Error(await parseErrorMessage(res, 'Color delete failed'))
 }
 
+/** Vizsgaértékelés összesítő (lista) — nagy JSON mezők nélkül */
+export type TaskEvaluationSummary = {
+  id: number
+  task_save_id: number
+  user_id: number
+  date: string
+  note: string | null
+  total_good_cell: number
+  good_cell: number
+  bad_cell: number
+  unfilled_cell: number
+  possible_sentence: number
+  good_sentence: number
+  bad_sentence: number
+  duplicate_sentence: number
+  completed_time: number
+  created_at?: string
+  updated_at?: string
+  user?: Pick<User, 'id' | 'name' | 'email' | 'username' | 'role'>
+  task_save?: TaskSaveRef & {
+    task_save_group?: { id: number; name: string }
+    user?: Pick<User, 'id' | 'name' | 'username'>
+  }
+}
+
+export type TaskSaveRef = {
+  id: number
+  name: string
+  level: string
+  generation_mode: string
+  board_size: number
+  time_limit: number
+  task_save_group_id: number
+  user_id: number
+}
+
+/** Teljes értékelés (megtekintő) */
+export type TaskEvaluationDetail = TaskEvaluationSummary & {
+  sentence_result: string | null
+  filled_board: Record<string, unknown>
+}
+
+export type Paginated<T> = {
+  data: T[]
+  current_page: number
+  last_page: number
+  per_page: number
+  total: number
+}
+
+export type StaffTaskEvaluationsQuery = {
+  page?: number
+  per_page?: number
+  user_id?: number
+  task_save_id?: number
+  /** ISO vagy `YYYY-MM-DD HH:mm:ss` — a backend `date` mezőhöz */
+  from?: string
+  to?: string
+  /** Részleges egyezés a feladat (`task_saves.name`) nevére */
+  task_name?: string
+  /** Részleges egyezés a megjegyzés szövegére */
+  note?: string
+  completed_time_min?: number
+  completed_time_max?: number
+}
+
+export async function listStaffTaskEvaluations(
+  token: string,
+  query: StaffTaskEvaluationsQuery = {},
+): Promise<Paginated<TaskEvaluationSummary>> {
+  const params = new URLSearchParams()
+  Object.entries(query).forEach(([key, value]) => {
+    if (value === undefined || value === null || value === '') return
+    params.set(key, String(value))
+  })
+  const suffix = params.toString()
+  const endpoint = suffix ? `${API_BASE_URL}/staff/task-evaluations?${suffix}` : `${API_BASE_URL}/staff/task-evaluations`
+
+  const res = await fetch(endpoint, {
+    headers: { ...authHeaders(token) },
+  })
+
+  if (!res.ok) {
+    throw new Error(await parseErrorMessage(res, 'Vizsgaértékelések betöltése sikertelen'))
+  }
+
+  return await parseJson<Paginated<TaskEvaluationSummary>>(res)
+}
+
+export async function getStaffTaskEvaluation(token: string, evaluationId: number): Promise<TaskEvaluationDetail> {
+  const res = await fetch(`${API_BASE_URL}/staff/task-evaluations/${evaluationId}`, {
+    headers: { ...authHeaders(token) },
+  })
+
+  if (!res.ok) {
+    throw new Error(await parseErrorMessage(res, 'Értékelés betöltése sikertelen'))
+  }
+
+  return await parseJson<TaskEvaluationDetail>(res)
+}
+

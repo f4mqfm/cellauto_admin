@@ -11,6 +11,8 @@
   place-items: center;
   flex-grow: 1;
   padding: 32px 20px 24px;
+  /* Flex child: széles tartalom ne hozzon létre vízszintes oldalgörgetést */
+  min-width: 0;
 
   @media (max-width: 1024px) {
     gap: 18px;
@@ -189,6 +191,7 @@
 
 .content {
   width: 100%;
+  min-width: 0;
   display: grid;
   gap: 16px;
   justify-items: stretch;
@@ -197,6 +200,7 @@
 
 .card {
   width: 100%;
+  min-width: 0;
   max-width: 1126px;
   border: 1px solid var(--border);
   border-radius: 12px;
@@ -541,6 +545,273 @@ button.danger:hover:not(:disabled) {
 .confirmModal__body strong {
   color: var(--text-h);
   font-weight: 600;
+}
+
+.confirmModal__panel--examDetail {
+  width: min(640px, calc(100vw - 32px));
+  max-width: 640px;
+  /* Hosszú tartalom: a panel ne nőjön a képernyőn túl — görgetés a törzsben, cím + Bezárás fix */
+  display: flex;
+  flex-direction: column;
+  max-height: min(92vh, calc(100dvh - 48px));
+  min-height: 0;
+}
+
+.confirmModal__panel--examDetail .confirmModal__title {
+  flex-shrink: 0;
+}
+
+.confirmModal__panel--examDetail .confirmModal__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  margin-bottom: 0;
+  -webkit-overflow-scrolling: touch;
+}
+
+.confirmModal__panel--examDetail .confirmModal__actions {
+  flex-shrink: 0;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid color-mix(in srgb, var(--border) 88%, transparent);
+}
+
+/* Egy görgető a modál törzsén: ne legyen külön max-height a mondat résznél */
+.confirmModal__panel--examDetail .examDetailModal__sentenceFormatted {
+  max-height: none;
+  overflow: visible;
+}
+
+.examDetailModal__header {
+  margin-bottom: 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 85%, transparent);
+}
+
+.examDetailModal__headerRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px 16px;
+}
+
+.examDetailModal__headerIdentity {
+  flex: 1 1 12rem;
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-h);
+  line-height: 1.45;
+  word-break: break-word;
+  min-width: 0;
+}
+
+.examDetailModal__headerExamTime {
+  flex: 0 1 auto;
+  margin: 0;
+  text-align: right;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+  line-height: 1.45;
+  font-variant-numeric: tabular-nums;
+}
+
+.examDetailModal__headerExamTime time {
+  color: var(--text-h);
+  font-weight: 600;
+}
+
+.examDetailModal__secTitle {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text);
+  margin: 14px 0 8px;
+}
+
+.examDetailModal__secTitle:first-of-type {
+  margin-top: 0;
+}
+
+.examDetailModal__kv {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.examDetailModal__kv th {
+  text-align: left;
+  font-weight: 500;
+  color: var(--text);
+  padding: 7px 12px 7px 0;
+  vertical-align: top;
+  width: 38%;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 65%, transparent);
+}
+
+.examDetailModal__kv td {
+  padding: 7px 0;
+  color: var(--text-h);
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 65%, transparent);
+}
+
+.examDetailModal__kv tr:last-child th,
+.examDetailModal__kv tr:last-child td {
+  border-bottom: none;
+}
+
+.examDetailModal__summaryRow {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 4px;
+}
+
+@media (max-width: 520px) {
+  .examDetailModal__summaryRow {
+    grid-template-columns: 1fr;
+  }
+}
+
+.examDetailModal__summaryCard {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--bg) 94%, var(--code-bg));
+}
+
+.examDetailModal__summaryLabel {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+
+.examDetailModal__summaryVal {
+  font-size: 16px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-h);
+}
+
+.examDetailModal__miniStatWrap {
+  overflow-x: auto;
+  margin-top: 4px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--bg) 96%, var(--code-bg));
+}
+
+.examDetailModal__miniStat {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.examDetailModal__miniStat thead th {
+  padding: 8px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-h);
+  background: color-mix(in srgb, var(--bg) 88%, var(--code-bg));
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
+  text-align: center;
+}
+
+.examDetailModal__miniStat tbody td {
+  padding: 10px 10px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  color: var(--text-h);
+}
+
+.examDetailModal__miniStat th:not(:last-child),
+.examDetailModal__miniStat td:not(:last-child) {
+  border-right: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
+}
+
+.examDetailModal__note {
+  margin-top: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--border) 90%, transparent);
+  background: color-mix(in srgb, var(--bg) 96%, var(--code-bg));
+  font-size: 14px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+/* Mondat eredmény — szakaszok, listák (Mondatok.png jelleg) */
+.examDetailModal__sentenceFormatted {
+  margin-top: 8px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--bg) 92%, var(--code-bg));
+  font-size: 14px;
+  line-height: 1.55;
+  max-height: 320px;
+  overflow: auto;
+}
+
+.examDetailModal__sentenceBlock {
+  margin-bottom: 16px;
+}
+
+.examDetailModal__sentenceBlock:last-child {
+  margin-bottom: 0;
+}
+
+.examDetailModal__sentenceBlockTitle {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-h);
+  margin-bottom: 8px;
+}
+
+.examDetailModal__sentenceList {
+  margin: 0;
+  padding-left: 1.2rem;
+  color: var(--text-h);
+}
+
+.examDetailModal__sentenceList li {
+  margin-bottom: 6px;
+}
+
+.examDetailModal__sentenceList li:last-child {
+  margin-bottom: 0;
+}
+
+.examDetailModal__sentenceChain,
+.examDetailModal__sentenceChainLine {
+  font-family: var(--mono);
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+.examDetailModal__sentencePlain {
+  margin-bottom: 12px;
+}
+
+.examDetailModal__sentencePlain:last-child {
+  margin-bottom: 0;
+}
+
+.examDetailModal__sentencePlain p {
+  margin: 0 0 6px;
+  color: var(--text-h);
+}
+
+.examDetailModal__sentencePlain p:last-child {
+  margin-bottom: 0;
 }
 
 .confirmModal__actions {
@@ -972,15 +1243,29 @@ button.danger:hover:not(:disabled) {
   display: grid;
   gap: 12px;
   grid-template-columns: 1fr 1fr;
+  /* Ne nyújtsa mindkét oszlopot a magasabbik magasságára — felesleges üres terület */
+  align-items: start;
   @media (max-width: 720px) {
     grid-template-columns: 1fr;
   }
 }
 
+/* Rács: alapért. min-width: auto a táblától megakadályozná a zsugorítást → oldalszintű vízszintes scroll */
+.grid2 > * {
+  min-width: 0;
+}
+
 .tableWrap {
-  overflow: auto;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: auto;
+  /* Ha a tartalom alacsonyabb, ne legyen felesleges belső „magas” görgető (a magasságot nem kényszerítjük) */
+  max-height: none;
   border: 1px solid var(--border);
   border-radius: 12px;
+  background: color-mix(in srgb, var(--bg) 92%, var(--code-bg));
 }
 
 /** Bal oldali lista táblázat: a jobb panelen szerkesztett lista teljes sora kiemelve */
@@ -1012,6 +1297,10 @@ button.danger:hover:not(:disabled) {
   background: color-mix(in srgb, var(--bg) 92%, var(--code-bg));
   position: sticky;
   top: 0;
+}
+
+.table th input:focus-visible {
+  outline-offset: -1px;
 }
 
 @media (max-width: 860px) {

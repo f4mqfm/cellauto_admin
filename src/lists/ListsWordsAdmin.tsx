@@ -2079,7 +2079,7 @@ export function ListsWordsAdmin(props: Props) {
                       </div>
                     </div>
 
-                    <div className="grid2" style={{ alignItems: 'start' }}>
+                    <div className="grid2">
                       <div className="panel" style={{ margin: 0 }}>
                         <h4 style={{ marginTop: 0 }}>GEN{relFromGen} (forrás)</h4>
                         <label className="field">
