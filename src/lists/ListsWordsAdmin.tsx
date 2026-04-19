@@ -127,7 +127,11 @@ function parseWordlistText(raw: string): ParsedWordlist {
   return { generations, edges }
 }
 
-/** Minden olyan útvonal (GEN1 → … → utolsó generáció), ami a relációkkal összerakható; duplikátum mentes. */
+/**
+ * GEN1-től induló útvonalak: minden terminális lánc — legyen az MAX generáció vagy zsákutca
+ * (nincs tovább vezető éle a következő generáció felé). Így rövidebb relációs láncok is benne vannak.
+ * Duplikátum mentes.
+ */
 function enumerateFullRelationPaths(
   wordsData: WordGenerationsResponse,
   relations: WordRelation[],
@@ -170,11 +174,19 @@ function enumerateFullRelationPaths(
 
   function dfs(currentId: number, pathIds: number[]) {
     const cur = wordById.get(currentId)!
+    const outs = adj.get(currentId) ?? []
+
     if (cur.generation === maxGen) {
       recordPath(pathIds)
       return
     }
-    for (const nextId of adj.get(currentId) ?? []) {
+
+    if (outs.length === 0) {
+      recordPath(pathIds)
+      return
+    }
+
+    for (const nextId of outs) {
       dfs(nextId, [...pathIds, nextId])
     }
   }
@@ -626,6 +638,16 @@ function SentenceModalContent(props: {
     })
   }, [sentencesPaths, filters, sentencesMaxGen])
 
+  /** Mondatok száma szószám szerint (teljes lista, szűrőtől függetlenül). */
+  const sentenceCountByWordLength = useMemo(() => {
+    const m = new Map<number, number>()
+    for (const path of sentencesPaths) {
+      const n = path.length
+      m.set(n, (m.get(n) ?? 0) + 1)
+    }
+    return m
+  }, [sentencesPaths])
+
   async function saveGenMessages() {
     if (sentencesMaxGen === 0) return
     setMsgSaveBusy(true)
@@ -657,11 +679,32 @@ function SentenceModalContent(props: {
     ) : sentencesPaths.length === 0 ? (
       <p className="muted">
         {sentencesMaxGen >= 2
-          ? `Nincs egyetlen teljes lánc sem GEN1 → GEN${sentencesMaxGen} irányban a megadott relációkkal.`
+          ? `Nincs egyetlen GEN1-től induló relációs lánc sem a megadott relációkkal.`
           : 'Nincs GEN1 szó ehhez a listához.'}
       </p>
     ) : (
       <>
+        {sentencesMaxGen >= 2 ? (
+          <div className="sentenceStatsBlock muted" style={{ margin: '0 0 12px', fontSize: 13, lineHeight: 1.5 }}>
+            {Array.from({ length: sentencesMaxGen - 1 }, (_, i) => i + 2)
+              .filter((k) => (sentenceCountByWordLength.get(k) ?? 0) > 0)
+              .map((k) => (
+                <div key={`sent-len-${k}`}>
+                  {k} szavas mondatok száma:{' '}
+                  <strong>{sentenceCountByWordLength.get(k) ?? 0}</strong>
+                </div>
+              ))}
+            <div style={{ marginTop: 4 }}>
+              Összes mondatok száma: <strong>{sentencesPaths.length}</strong>
+            </div>
+          </div>
+        ) : (
+          <div className="sentenceStatsBlock muted" style={{ margin: '0 0 12px', fontSize: 13, lineHeight: 1.5 }}>
+            <div>
+              Összes mondatok száma: <strong>{sentencesPaths.length}</strong>
+            </div>
+          </div>
+        )}
         <div className="sentenceFiltersBar">
           <span className="sentenceFiltersBar__title muted">Oszlopszűrő (gépelésre azonnal szűkül)</span>
           <button
@@ -825,7 +868,7 @@ function SentenceModalContent(props: {
   return (
     <>
       <p className="muted" style={{ margin: '0 0 10px', fontSize: 13 }}>
-        Teljes láncok GEN1-től az utolsó generációig, minden engedélyezett relációs ágon végig (ismétlés nélkül).
+        GEN1-től induló mondatok: minden relációs úton végig (ha van), vagy ameddig zsákutcába nem fut (ismétlés nélkül).
       </p>
 
       {sentencesError ? (
