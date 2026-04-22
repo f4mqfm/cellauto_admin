@@ -1,0 +1,9 @@
+1.3. Célkitűzések
+
+A szakdolgozat készítése során olyan program megvalósítása volt a célom, amely több korosztály számára is érthető, hasznos és élvezhető. A fejlesztés középpontjában a sejtautomaták állnak, amelyek egyszerű szabályrendszer alapján működnek, mégis összetett és látványos mintázatok kialakítására képesek.
+
+A rendszer egyik fontos célja, hogy támogassa a logikus gondolkodás és a kreativitás fejlődését. A felhasználók a szabályok megértésén és alkalmazásán keresztül megtapasztalhatják, hogyan vezethet néhány alapelv bonyolult viselkedésekhez, miközben saját ötleteiket is kipróbálhatják.
+
+További célkitűzés volt egy olyan felhasználóbarát és vizuálisan vonzó alkalmazás létrehozása, amely azonnali visszajelzést ad, ezáltal fenntartja az érdeklődést és a motivációt. A program külön erőssége, hogy a játékos, interaktív működésen keresztül a nyelvtanulást és a mondatalkotási készségek fejlesztését is segíti.
+
+Összességében a cél egy olyan komplex, mégis könnyen használható oktatási eszköz létrehozása volt, amelyben a tanulás és az élményszerű felfedezés egymást erősítve jelenik meg.

@@ -89,3 +89,4 @@ tegyel be a wordlist text ala egy nyomogombot ami kigeneralja a listabol a szava
 ha mar a szavak felvannak toltve es a relaciok esetleg a rrwaciok is akkor figyelmeztessen, hogy mar van adat es felulirodik
 ha figyeleztetesnel igent nyomok akor rorlodjon a szavak es a relaciok es epitse fel ujra a listabol
 
+

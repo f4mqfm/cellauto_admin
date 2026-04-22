@@ -1,0 +1,35 @@
+# Az Access Logok modul bemutatása
+
+Az Access Logok modul az admin felület auditálási és ellenőrzési funkcióját biztosítja.  
+Célja, hogy a rendszerhasználathoz kapcsolódó események (például belépések, kilépések, aktivitási nyomok) visszakereshetők és áttekinthetők legyenek.
+
+## A modul szerepe
+
+A naplózási funkció a biztonság és az üzemeltetés szempontjából kiemelten fontos.  
+Segítségével az adminisztrátor képet kap arról, hogy ki, mikor és milyen körülmények között használta a rendszert.
+
+## Fő funkciók
+
+- **Naplóbejegyzések listázása:** időrendben megjelenített események.
+- **Szűrés és keresés:** célzott visszakeresés felhasználó, időszak vagy eseménytípus szerint.
+- **Áttekinthetőség:** táblázatos forma, amely támogatja a gyors ellenőrzést.
+- **Visszakövethetőség:** problémák vagy rendellenes használat esetén az eseménylánc rekonstruálható.
+
+## Üzemeltetési és biztonsági jelentőség
+
+Az Access Logok modul több szempontból támogatja a rendszer működését:
+
+- segít azonosítani a jogosulatlan vagy gyanús hozzáférési mintákat,
+- támogatja a hibakeresést és incidensvizsgálatot,
+- alapot ad a belső auditfolyamatokhoz,
+- növeli az üzemeltetés átláthatóságát és elszámoltathatóságát.
+
+## Pedagógiai rendszerben betöltött szerep
+
+Oktatási környezetben különösen fontos a felhasználói tevékenységek ellenőrizhetősége, mivel a rendszerben vizsgaeredmények és tanulói adatok is kezelve vannak.  
+A naplóadatok így nemcsak technikai, hanem adatvédelmi és szervezeti szempontból is relevánsak.
+
+## Összegzés
+
+Az Access Logok modul a rendszer kontrollmechanizmusának lényegi része.  
+Szakdolgozati nézőpontból jól bemutatja, hogy a funkcionális adminisztráció mellett hogyan jelenik meg a biztonságtudatos, auditálható működés követelménye egy komplex webes alkalmazásban.

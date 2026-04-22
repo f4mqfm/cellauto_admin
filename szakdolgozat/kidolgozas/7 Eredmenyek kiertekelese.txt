@@ -1,0 +1,64 @@
+7. Eredmények és kiértékelés
+7.1. A megvalósított rendszer eredményei
+
+A szakdolgozat keretében kitűzött egyik legfontosabb cél egy olyan működőképes, modern technológiákra épülő webes alkalmazás létrehozása volt, amely a sejtautomaták elvét gyakorlati és oktatási környezetben is hasznosítható formában jeleníti meg. A fejlesztési folyamat eredményeként létrejött a Cellauto rendszer, amely több, egymással együttműködő komponensből álló, teljes értékű alkalmazásként valósult meg.
+
+A rendszer központi eleme a backend API réteg, amely biztosítja az üzleti logika működését, a felhasználók hitelesítését, a jogosultságkezelést, valamint az adatok tartós tárolását. Az elkészült REST alapú szolgáltatásréteg stabil kommunikációs kapcsolatot teremt a kliensalkalmazások és az adatbázis között.
+
+A fejlesztés eredményeként elkészült az adminisztrációs felület is, amely lehetővé teszi a felhasználók kezelését, szólisták és színpaletták szerkesztését, vizsgaeredmények megtekintését, valamint naplózási események elemzését. Ez a modul jelentősen megkönnyíti a rendszer üzemeltetését és oktatási célú használatát.
+
+A végfelhasználói webes felület szintén sikeresen megvalósult. A rendszer támogatja a homokozó módot, a gyakorló feladatokat, a vizsgarendszert, a mentési funkciókat, valamint a sejtautomata-alapú interaktív tábla használatát. Ezáltal a felhasználók játékos és vizuális módon dolgozhatnak a rendszerrel.
+
+7.2. A célkitűzések teljesülésének értékelése
+
+A dolgozat elején megfogalmazott célkitűzések jelentős része teljesült. Sikerült létrehozni egy olyan alkalmazást, amely egyszerre szemlélteti a sejtautomaták működését, valamint oktatási célokra is felhasználható.
+
+A logikus gondolkodás fejlesztését a rendszer szabályalapú működése támogatja. A felhasználóknak meg kell érteniük az egyes műveletek következményeit, a sejtek viselkedését befolyásoló feltételeket, valamint a feladatok megoldásához szükséges lépéseket. Ez jól kapcsolódik az algoritmikus gondolkodás fejlesztéséhez.
+
+A kreativitás támogatása szintén megvalósult, mivel a felhasználók saját elrendezéseket, próbálkozásokat és megoldási stratégiákat alakíthatnak ki. A rendszer nem kizárólag merev feladatmegoldást kínál, hanem kísérletezésre is lehetőséget ad.
+
+Fontos cél volt a motiváló, vizuális és élményszerű működés biztosítása is. A grafikus tábla, az azonnali visszajelzések, valamint a játékos működés hozzájárulnak ahhoz, hogy a tanulási folyamat kevésbé legyen monoton, és hosszabb ideig fenntartható maradjon a felhasználói érdeklődés.
+
+7.3. Technológiai eredmények
+
+A projekt technológiai szempontból is sikeresnek tekinthető. A Laravel alapú backend és a modern frontend technológiák együtt jól strukturált, bővíthető rendszert eredményeztek.
+
+Az API-first megközelítés előnye, hogy a backend logika elkülönül a megjelenítési rétegtől. Ennek következtében a rendszer később további kliensekkel – például mobilalkalmazással vagy más webes felülettel – is összekapcsolható.
+
+A role-based jogosultsági rendszer biztosítja, hogy az adminisztrációs műveletek elkülönüljenek a normál felhasználói funkcióktól. Ez üzemeltetési és biztonsági szempontból is megfelelő megoldásnak bizonyult.
+
+Az adatbázis-tervezés során kialakított relációs séma támogatja a konzisztens adattárolást, a tulajdonosi elválasztást, valamint a mentések és listák strukturált kezelését. A JSON alapú adattárolási elemek rugalmasságot adnak a dinamikus állapotok kezeléséhez.
+
+7.4. Oktatási és gyakorlati hasznosíthatóság
+
+A rendszer egyik legnagyobb eredménye, hogy a sejtautomaták elméleti fogalmát sikerült gyakorlati, könnyen használható formában megjeleníteni. Ez különösen értékes oktatási szempontból, mivel az absztrakt modellek sok esetben nehezen érthetők pusztán elméleti leírás alapján.
+
+A Cellauto lehetőséget biztosít arra, hogy a felhasználó saját maga tapasztalja meg a szabályalapú rendszerek működését. A vizuális reprezentáció segíti a megértést, míg a feladatok és vizsgák strukturált tanulási környezetet teremtenek.
+
+A szóalapú és mondatépítő funkciók révén a rendszer nemcsak informatikai, hanem nyelvi készségek fejlesztésére is alkalmas lehet. Ez egyedi irányt ad a projektnek, mivel a sejtautomaták logikája és a nyelvi tanulás ritkán kapcsolódik össze egy rendszerben.
+
+7.5. Korlátok és felmerült nehézségek
+
+A fejlesztés során természetesen több kihívás is jelentkezett. Egy összetett, több komponensből álló rendszer esetében a frontend és backend folyamatos szinkronban tartása időigényes feladat volt. Az API módosításai gyakran frontend oldali igazításokat is szükségessé tettek.
+
+További kihívást jelentett a jogosultsági logika következetes megvalósítása, különösen az admin és normál felhasználói szerepkörök elválasztása esetén. A mentési rendszerek és tulajdonosi hozzáférések szintén fokozott figyelmet igényeltek.
+
+A jelenlegi rendszer elsősorban asztali böngészős használatra optimalizált. Bár mobil eszközökön is működőképes lehet, a teljes mobilélmény további fejlesztéseket igényelhet.
+
+Automatizált frontend tesztelés jelenleg korlátozott mértékben áll rendelkezésre, ezért a kliensoldali minőségbiztosítás főként manuális tesztelésre épült. Ez a jövőben továbbfejleszthető terület.
+
+7.6. Továbbfejlesztési lehetőségek
+
+A rendszer jelenlegi formájában stabil alapot biztosít további fejlesztésekhez. Lehetséges jövőbeli irány a részletes statisztikai modul kialakítása, amely nyomon követi a felhasználók teljesítményét, fejlődését és aktivitását.
+
+További lehetőség egy tanári vagy oktatói dashboard létrehozása, amely osztályszintű vagy csoportszintű eredményeket képes megjeleníteni. Ez különösen hasznos lehet intézményi felhasználás esetén.
+
+Technológiai szempontból indokolt lehet mobilalkalmazás készítése, illetve progresszív webalkalmazás (PWA) támogatás bevezetése. Ez növelné a hozzáférhetőséget és a használati kényelmet.
+
+Fejlettebb irányként mesterséges intelligenciával támogatott feladatgenerálás vagy személyre szabott nehézségi szintek kialakítása is elképzelhető. Ez adaptív tanulási környezetet eredményezhetne.
+
+7.7. Összegzés
+
+A szakdolgozat eredményeként létrejött Cellauto rendszer sikeresen ötvözi a sejtautomaták elméleti világát a modern webes szoftverfejlesztéssel. A projekt nem csupán technológiai szempontból tekinthető sikeresnek, hanem oktatási értéket is hordoz, mivel interaktív és motiváló módon segíti a tanulást.
+
+A fejlesztés során sikerült működő backend rendszert, adminisztrációs felületet és végfelhasználói alkalmazást létrehozni, amelyek egységes rendszert alkotnak. Az elkészült megoldás jó alapot nyújt további fejlesztésekhez, és bizonyítja, hogy a sejtautomaták gyakorlati alkalmazása korszerű digitális környezetben is releváns és értékteremtő lehet.

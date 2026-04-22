@@ -1,0 +1,202 @@
+6. Tesztelés és verifikáció
+6.1. A tesztelés szerepe a rendszerfejlesztésben
+A szoftverfejlesztési folyamat egyik legfontosabb eleme a tesztelés, amelynek célja annak igazolása, hogy a létrehozott rendszer a meghatározott követelményeknek megfelelően működik. Egy összetettebb webalkalmazás esetében – ahol kliensoldali felületek, szerveroldali üzleti logika, adatbázis-kezelés és hálózati kommunikáció egyaránt jelen van – különösen fontos a több szinten megvalósított minőségbiztosítás.
+A Cellauto projekt esetében a tesztelés kiemelt jelentőséggel bírt, mivel a rendszer nem csupán egyszerű demonstrációs alkalmazásként készült, hanem valós felhasználói folyamatokat támogató oktatási platformként. A rendszerben megtalálható a felhasználókezelés, jogosultsági szintek kezelése, mentési mechanizmusok, feladatkiértékelési logika, valamint adminisztrációs modul is, ezért a hibák megelőzése és korai felismerése alapvető elvárás volt.
+A tesztelési folyamat célja az volt, hogy a rendszer funkcionálisan helyes, biztonságos, stabil és hosszabb távon karbantartható maradjon. Ennek érdekében automatizált és manuális tesztelési módszerek egyaránt alkalmazásra kerültek. 
+
+6.2. Alkalmazott tesztelési stratégia
+A projektben alkalmazott tesztelési stratégia többrétegű megközelítésre épült. Ennek lényege, hogy a rendszer különböző szintjei eltérő módszerekkel kerültek ellenőrzésre, ezáltal csökkenthető volt a rejtett hibák száma és növelhető a megbízhatóság.
+A főbb alkalmazott tesztelési szintek a következők voltak:
+
+
+Statikus ellenőrzés, amely a forráskód szerkezeti hibáinak, típushibáinak és stílusbeli problémáinak korai felismerését szolgálta.
+
+
+Egységtesztelés, amely kisebb logikai egységek elkülönített vizsgálatát tette lehetővé.
+
+
+Integrációs tesztelés, amely az egyes komponensek együttműködését ellenőrizte.
+
+
+Funkcionális tesztelés, amely a felhasználói folyamatok helyes működését vizsgálta.
+
+
+Regressziós újratesztelés, amely módosítások után biztosította, hogy a korábban működő funkciók ne sérüljenek.
+
+
+Ez a kombinált megközelítés jól illeszkedett a rendszer három fő komponenséhez: backend API, admin felület és végfelhasználói webes kliens. 
+
+6.3. Backend automatizált tesztelés
+A rendszer backend komponense Laravel keretrendszerre épül, amely beépített tesztelési infrastruktúrát biztosít. A szerveroldali logika automatizált ellenőrzése PHPUnit alapokon történt, amely a Laravel környezetben php artisan test illetve composer test parancsokkal futtatható.
+Az automatizált backend tesztelés különösen fontos volt, mivel a rendszerben itt található:
+
+
+a hitelesítés és tokenkezelés,
+
+
+a jogosultságellenőrzés,
+
+
+a CRUD műveletek üzleti logikája,
+
+
+a validációs szabályok,
+
+
+az adatbázis műveletek jelentős része.
+
+
+A tesztek futtatása elkülönített testing környezetben történt, amely in-memory SQLite adatbázist használt. Ez gyors végrehajtást és teljes izolációt biztosított, így a tesztelés nem érintette a fejlesztői vagy éles adatbázist.
+A megoldás előnyei:
+
+
+gyors futási idő,
+
+
+reprodukálható környezet,
+
+
+biztonságos adatkezelés,
+
+
+könnyű regressziós újrafuttatás. 
+
+
+
+6.4. API végpontok tesztelése
+Mivel a Cellauto rendszer központi eleme a REST szemléletű backend API, ezért a végpontok tesztelése külön figyelmet kapott. A tesztelés manuális HTTP hívásokkal és automatizált ellenőrzésekkel egyaránt történt.
+Az ellenőrzés során vizsgált főbb szempontok:
+
+
+helyes URL struktúra,
+
+
+megfelelő HTTP metódus használata,
+
+
+státuszkódok helyessége,
+
+
+JSON válaszformátum,
+
+
+hibakezelés konzisztenciája,
+
+
+hitelesítés és tokenkezelés.
+
+
+A rendszerben tipikusan az alábbi státuszkódok jelentek meg:
+
+
+200 OK – sikeres lekérdezés vagy módosítás
+
+
+201 Created – sikeres létrehozás
+
+
+401 Unauthorized – hitelesítési hiba
+
+
+403 Forbidden – jogosultsági hiba
+
+
+404 Not Found – nem létező erőforrás
+
+
+422 Unprocessable Entity – validációs hiba
+
+
+Külön vizsgálat tárgyát képezte, hogy jogosulatlan felhasználó ne férhessen hozzá más felhasználó mentéseihez, listáihoz vagy admin funkciókhoz. 
+
+6.5. Frontend és integrációs tesztelés
+A projekt két frontend komponenssel rendelkezik: az adminisztrációs felülettel és a végfelhasználói webes alkalmazással. Ezek működésének ellenőrzése elsősorban funkcionális és integrációs teszteléssel történt.
+Az admin felület esetében vizsgálatra kerültek:
+
+
+bejelentkezés,
+
+
+felhasználók kezelése,
+
+
+szólisták és színek kezelése,
+
+
+naplók megjelenítése,
+
+
+jogosultsági korlátozások.
+
+
+A végfelhasználói kliens esetében ellenőrzött funkciók:
+
+
+homokozó mód,
+
+
+gyakorló mód,
+
+
+vizsga mód,
+
+
+mentések létrehozása és visszatöltése,
+
+
+feladatkiértékelés,
+
+
+vizuális táblaállapot-kezelés.
+
+
+Az integrációs tesztelés során különösen fontos volt annak ellenőrzése, hogy a frontend által küldött kérések és a backend válaszai összhangban legyenek egymással. Ide tartozott a hibák helyes megjelenítése, a sikeres műveletek visszajelzése, valamint a munkamenetek kezelése. 
+
+6.6. Manuális rendszer- és felhasználói tesztelés
+A projekt fejlesztése során jelentős szerepet kapott a forgatókönyv alapú manuális tesztelés. Ez különösen hasznos volt a felhasználói élmény, a kezelhetőség és a logikai folyamatok ellenőrzésére.
+Tipikus ellenőrzött folyamatok:
+
+
+új felhasználó létrehozása és belépése,
+
+
+lista létrehozása és szerkesztése,
+
+
+mentés készítése, majd visszatöltése,
+
+
+vizsga indítása és kiértékelése,
+
+
+admin jogosultságú műveletek használata.
+
+
+A manuális tesztelés előnye, hogy valós felhasználói szemszögből mutatja meg a rendszer működését, ezért olyan hibák is felismerhetők vele, amelyek automatizált tesztekkel nehezebben detektálhatók. Ilyenek például a félreérthető kezelőfelületi elemek, rossz visszajelzések vagy kényelmetlen munkafolyamatok. 
+
+6.7. Dokumentáció és implementáció egyezőségének vizsgálata
+A fejlesztés során fontos szempont volt, hogy a rendszer dokumentációja és a tényleges implementáció összhangban maradjon. Ez különösen lényeges volt az API végpontok, adatmodellek és jogosultsági szabályok esetében.
+Az ellenőrzés során összevetésre kerültek:
+
+
+dokumentált végpontok és tényleges route-ok,
+
+
+paraméterek és validációs szabályok,
+
+
+adatbázis séma és migrációk,
+
+
+jogosultsági szintek,
+
+
+frontend működés és backend szerződés.
+
+
+Ez a folyamat hozzájárult ahhoz, hogy a szakdolgozatban bemutatott rendszer megfeleljen a valós implementációnak, és a dokumentáció ne csupán elméleti leírás legyen.
+
+6.8. Eredmények és összegzés
+A tesztelési folyamat eredményei alapján a Cellauto rendszer működése stabilnak és konzisztensnek tekinthető. A backend API megbízhatóan kezelte a hitelesítést, a jogosultságokat és az adatkezelési műveleteket. A frontend felületek megfelelően kommunikáltak a szerverrel, és a felhasználói folyamatok sikeresen végrehajthatók voltak.
+Az automatizált tesztek biztosították a fejlesztés közbeni gyors visszacsatolást, míg a manuális tesztelés a valós használhatóságot támogatta. A két módszer együttes alkalmazása kiegyensúlyozott minőségbiztosítási modellt eredményezett.
+Összességében megállapítható, hogy a Cellauto projekt tesztelési és verifikációs folyamatai megfelelő alapot biztosítanak a rendszer hosszú távú továbbfejlesztéséhez, valamint gyakorlati használatához.

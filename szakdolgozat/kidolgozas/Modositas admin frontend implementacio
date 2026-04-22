@@ -1,0 +1,395 @@
+Az 5 fejezet 3 reszbol fog allni:
+5.1: A backend implementacio
+5.2: Az Admin felulet (admin)
+5.3: A felhasznaloi  felulet (www)
+
+
+5.1: A backend implementacio
+
+
+# API általános leírás
+
+## Bevezetés
+
+Ez a fejezet a rendszer backend API rétegének általános bemutatását tartalmazza. Az API feladata, hogy egységes és biztonságos kommunikációs felületet biztosítson a kliensalkalmazások (webes felület, admin felület) és az adatbázis között.
+
+## Felhasznált technológiák
+
+A backend modern PHP alapokon készült, az alábbi fő technológiai elemekkel:
+
+- **PHP 8.2**: a szerveroldali üzleti logika megvalósításához.
+- **Laravel 12**: keretrendszer az API-réteg, routing, middleware-kezelés és adatbázis-elérés támogatására.
+- **Laravel Sanctum**: tokenalapú hitelesítési mechanizmus REST API környezetben.
+- **Eloquent ORM**: objektum-relációs leképezés az adatbázis-műveletekhez.
+- **Migrációk**: verziózott adatbázisséma-kezelés és reprodukálható telepítés.
+
+## Az API szerepe a rendszerben
+
+Az API központi komponensként működik, és az alábbi feladatokat látja el:
+
+- felhasználói hitelesítés és munkamenet-kezelés,
+- jogosultság alapú hozzáférés-ellenőrzés (felhasználó, staff, admin),
+- üzleti entitások CRUD műveleteinek kiszolgálása,
+- domain-specifikus logika végrehajtása (pl. listakezelés, feladatmentések, értékelések),
+- naplózási események rögzítése.
+
+## Funkcionális cél
+
+Az API célja, hogy a kliensoldali komponensek számára stabil, skálázható és jól strukturált interfészt adjon. Ennek előnyei:
+
+- a frontend és backend fejlesztés elkülöníthető,
+- a rendszer modulárisan bővíthető új végpontokkal,
+- az üzleti szabályok központilag, konzisztensen érvényesíthetők,
+- egységes JSON-alapú adatcsere biztosítható.
+
+## Biztonsági és üzemeltetési szempontok
+
+A megoldás a szakdolgozati követelmények szempontjából is releváns biztonsági elemeket tartalmaz:
+
+- tokenalapú API-hozzáférés,
+- middleware-alapú endpoint-védelem,
+- inaktív vagy felfüggesztett felhasználók tiltása,
+- session-időtúllépés kezelése,
+- hozzáférési események naplózása (bejelentkezés, kijelentkezés, látogatás).
+
+## Összegzés
+
+A backend API technológiai és architekturális szempontból korszerű, rétegezett felépítésű megoldás. A Laravel ökoszisztémára építve biztosítja a fejleszthetőséget, a megbízható hitelesítést, valamint az üzleti logika központi és ellenőrizhető végrehajtását, ami jól illeszkedik egy szakdolgozatban bemutatandó szoftverrendszer követelményeihez.
+
+
+
+5.2: Az Admin felulet (admin)
+
+# Az admin felület általános bemutatása
+
+Az alkalmazás admin felülete a rendszer üzemeltetésének és szakmai karbantartásának központi eszköze.  
+Feladata, hogy a jogosult felhasználók (elsősorban admin és tanár szerepkör) strukturált, áttekinthető módon tudják kezelni a tanulási tartalmakat, a felhasználókat és az értékelési eredményeket.
+
+## Cél és szerep
+
+Az adminisztrációs modul fő célja, hogy a pedagógiai folyamatot támogató háttérműveleteket egyetlen kezelőfelületen biztosítsa.  
+Ide tartozik többek között a felhasználók kezelése, a szólisták és színlisták szerkesztése, a vizsgák eredményeinek áttekintése, valamint a hozzáférési naplók ellenőrzése.
+
+## Felépítés és navigáció
+
+A felület bal oldali menüre épülő, moduláris szerkezetet követ, ahol az egyes funkciók külön menüpontként jelennek meg.  
+Ez a felépítés csökkenti a kezelési komplexitást, mert az adminisztrátor mindig egy jól körülhatárolt feladatterületen dolgozik (például felhasználókezelés vagy vizsgaelemzés).
+
+## Fő funkcionális területek
+
+- **Felhasználók kezelése:** fiókok létrehozása, módosítása, jogosultsági szint beállítása, státuszkezelés.
+- **Szólisták kezelése:** szóanyagok létrehozása, szerkesztése és didaktikai célú karbantartása.
+- **Színlisták kezelése:** vizuális kategóriák és kapcsolódó adatok adminisztrációja.
+- **Vizsgák megtekintése:** mentett vizsgaeredmények listázása, szűrése és részletes elemzése.
+- **Hozzáférési naplók:** belépési és rendszerhasználati események ellenőrzése audit célokra.
+
+## Működési és használhatósági szempontok
+
+A felület kialakítása a gyors, biztonságos adminisztrációt támogatja:
+
+- táblázatos listanézetek és szűrők segítik a nagy adatmennyiség kezelését,
+- modális ablakok biztosítják a részletes adatok kontextusban történő megjelenítését,
+- visszajelző üzenetek (sikeres/hibás művelet) támogatják a hibamentes munkavégzést,
+- megerősítő lépések csökkentik a véletlen, nem kívánt módosítások esélyét.
+
+## Jogosultság és adatbiztonság
+
+Az admin felület elérése szerepkörhöz kötött, így a rendszer csak a megfelelő jogosultságú felhasználóknak enged műveletvégzést.  
+Ez a megközelítés egyszerre szolgálja az adatbiztonságot, a rendszerkonzisztenciát és az intézményi felelősségi körök betartását.
+
+## Összegzés
+
+Az admin felület a teljes alkalmazás működésének irányító rétege: biztosítja a tartalomkezelést, a felhasználói adminisztrációt és az eredmények nyomon követését.  
+Szakdolgozati szempontból ez a komponens mutatja meg, hogyan valósul meg a rendszerben az üzemszerű működés, a kontrollált adatkezelés és a pedagógiai folyamat informatikai támogatása.
+
+
+5.2.1: Felhasználókezelés
+# Felhasználókezelés – rövid leírás
+
+A rendszerben a felhasználókezelés az admin felület egyik alapmodulja.  
+A célja, hogy az adminisztrátor egy helyen tudja kezelni a fiókok teljes életciklusát: létrehozás, módosítás, felfüggesztés/aktiválás és törlés.
+
+## Jogosultsági elv
+
+A felhasználókezelés csak admin szerepkörrel érhető el.  
+Ha nem admin jelentkezik be, a modul nem engedi a műveleteket, ezzel csökkentve a jogosulatlan adatváltoztatás kockázatát.
+
+## Támogatott szerepkörök
+
+A felhasználók több szerepkört kaphatnak (például: vendég, diák, tanár, admin).  
+A szerepkör határozza meg, hogy a felhasználó a rendszer mely részeit látja és milyen műveleteket végezhet.
+
+## Alapműveletek
+
+- **Létrehozás:** új felhasználó felvétele kötelező adatokkal (felhasználónév, név, e-mail, jelszó, szerepkör).
+- **Szerkesztés:** meglévő felhasználó adatainak frissítése, szerepkör módosítása.
+- **Felfüggesztés / újraaktiválás:** ideiglenes hozzáférés-kezelés törlés nélkül.
+- **Törlés:** végleges eltávolítás; bizonyos védelmi szabályok mellett (például saját fiók vagy admin fiók törlésének tiltása).
+
+## Keresés és áttekinthetőség
+
+A listanézetben szöveges keresés segíti a gyors szűrést (azonosító, név, felhasználónév, e-mail, szerepkör alapján).  
+Ez különösen nagy felhasználószámnál fontos, mert csökkenti az adminisztrációs időt és a hibalehetőséget.
+
+## Visszajelzés és működési biztonság
+
+A felület minden művelet után állapot-visszajelzést ad (siker/hiba üzenetek).  
+A kockázatos lépéseknél megerősítő ablak jelenik meg, így a rendszer támogatja a tudatos, kontrollált módosítást.
+
+## Összegzés
+
+A felhasználókezelés modul a jogosultságkezelés és az üzemeltetési kontroll központi eleme.  
+Az admin számára gyors és átlátható kezelést biztosít, miközben a beépített korlátozásokkal védi a rendszer konzisztenciáját.
+
+
+5.2.2: Szólisták kezelése
+# A szólisták kezelésének bemutatása
+
+A szólisták kezelése az admin felület egyik központi funkciója, mivel ez biztosítja a feladatok nyelvi tartalmának előállítását és karbantartását.  
+A modul célja, hogy a szakmai felhasználó (admin/tanár) gyorsan és következetesen tudja felépíteni azt a szókészletet, amelyre a gyakorló és vizsgafeladatok épülnek.
+
+## A modul szerepe a rendszerben
+
+A szólista nem csupán egyszerű felsorolás, hanem a feladatgenerálás alapadata.  
+A megfelelően szerkesztett szólisták közvetlenül befolyásolják a létrejövő mondatok minőségét, a feladatok nehézségét és a kiértékelés értelmezhetőségét.
+
+## Fő kezelési műveletek
+
+- **Létrehozás:** új szólista felvétele, alapadatok megadása.
+- **Szerkesztés:** meglévő lista elemeinek módosítása, bővítése, javítása.
+- **Relációk kezelése:** szavak közötti kapcsolatok definiálása, amely a mondatgenerálás logikai alapját adja.
+- **Generált tartalom ellenőrzése:** a létrejövő mondatok és kapcsolatok szakmai validálása.
+- **Mentés és verziókövetés jellegű karbantartás:** a listák folyamatos finomhangolása a tapasztalatok alapján.
+
+## Kapcsolat a feladatgenerálással
+
+A szólistákból és relációikból épül fel a rendszer által használt mondatstruktúra.  
+Ez azt jelenti, hogy a szólistakezelő modul minősége közvetlenül meghatározza, mennyire releváns és pedagógiailag hasznos feladatokat kap a tanuló.
+
+## Használhatósági szempontok
+
+A modul kialakításának fontos célja az áttekinthetőség:
+
+- a szerkesztési felület támogatja a gyors adatbevitelt,
+- a vizuálisan rendezett struktúra csökkenti a szerkesztési hibák számát,
+- a kapcsolatok és mondatok együttes megjelenítése segíti a szakmai ellenőrzést.
+
+Ez különösen lényeges nagyobb szólisták esetén, ahol a kézi ellenőrzés költsége gyorsan nő.
+
+## Minőségbiztosítási jelentőség
+
+A szólisták karbantartása minőségbiztosítási feladat is: a pontatlan vagy hiányos lista hibás mondatokat, ezáltal félrevezető feladatokat eredményezhet.  
+Ezért a modulban végzett szerkesztés nemcsak technikai, hanem módszertani szempontból is kritikus lépés.
+
+## Összegzés
+
+A szólisták kezelése a rendszer tartalmi motorjának tekinthető.  
+Szakdolgozati nézőpontból ez a modul mutatja meg, hogyan válik a nyers nyelvi adat strukturált, pedagógiailag felhasználható feladattartalommá, és hogyan biztosítható ennek folyamatos minősége az adminisztratív folyamatokban.
+
+
+5.2.3: Színlisták kezelése
+
+# A színlisták kezelésének bemutatása
+
+A színlisták kezelése az admin felület olyan funkciója, amely a vizuális kategorizálást és a feladatok áttekinthetőségét támogatja.  
+A modul célja, hogy a szakmai felhasználó (admin/tanár) egységes, pedagógiailag értelmezhető színstruktúrát tudjon kialakítani és karbantartani.
+
+## A modul szerepe
+
+A színlisták a rendszerben nem pusztán megjelenítési elemek: a vizuális jelölések segítik az információ gyors feldolgozását, a mintázatok felismerését és a feladatmegoldás támogatását.  
+Egy jól felépített színrendszer csökkenti a kognitív terhelést, különösen összetettebb táblák és relációk esetén.
+
+## Fő kezelési műveletek
+
+- **Létrehozás:** új színlista felvétele a szükséges alapadatokkal.
+- **Szerkesztés:** meglévő elemek módosítása, színek finomhangolása, elnevezések pontosítása.
+- **Rendezés és struktúra-kezelés:** a kategóriák logikus csoportosítása.
+- **Karbantartás:** elavult vagy nem használt elemek felülvizsgálata, tisztítása.
+
+## Kapcsolat a felhasználói élménnyel
+
+A színlisták közvetlenül befolyásolják a felület értelmezhetőségét.  
+Ha a színek következetesen vannak használva, a tanuló és az oktató gyorsabban azonosítja a fontos elemeket, így a rendszer kezelése intuitívabbá válik.
+
+## Használhatósági és minőségi szempontok
+
+A modulban végzett munka során kiemelt szempont:
+
+- a **konzisztencia** (azonos jelentéshez azonos szín),
+- a **olvashatóság** (megfelelő kontraszt és vizuális elkülöníthetőség),
+- a **karbantarthatóság** (későbbi bővítés egyszerűsége).
+
+Ezek a tényezők együtt biztosítják, hogy a vizuális jelölések hosszú távon is támogassák a rendszer pedagógiai céljait.
+
+## Összegzés
+
+A színlisták kezelése a rendszer vizuális minőségbiztosításának fontos része.  
+Szakdolgozati szempontból ez a modul azt mutatja meg, hogyan kapcsolódik a felületdesign és az adminisztratív adatkezelés a tanulási folyamat hatékonyságához.
+
+
+5.2.4: Vizsgák megtekintése
+
+# A „Vizsgák megtekintése” modul bemutatása
+
+A „Vizsgák megtekintése” modul az admin felületen a teljesítményadatok ellenőrzését és elemzését szolgálja.  
+A funkció célja, hogy az oktató/admin gyorsan át tudja tekinteni a mentett vizsgaeredményeket, majd egy kiválasztott sor részleteit részletesen is megvizsgálhassa.
+
+## A modul szerepe a rendszerben
+
+A vizsgamodul összeköti az értékelési folyamatot az adminisztratív döntéstámogatással.  
+Segítségével nemcsak az látható, hogy egy felhasználó mikor és milyen eredményt ért el, hanem az is, hogy a hibák milyen jellegűek voltak (például cella- vagy mondatszintű eltérések).
+
+## Listanézet és szűrés
+
+A modul első szintje egy táblázatos listanézet, amely a legfontosabb adatokat jeleníti meg:
+
+- vizsga dátuma,
+- tanuló adatai,
+- kapcsolódó feladat,
+- cellaeredmény százalékos mutatója,
+- mondateredmény százalékos mutatója,
+- megjegyzés.
+
+A lista szűrhető dátumtartomány, felhasználó, feladatnév és megjegyzés alapján.  
+Ez a szűrési lehetőség különösen hasznos nagy adatmennyiségnél, amikor célzottan kell visszakeresni egy adott időszakot vagy felhasználót.
+
+## Részletes nézet (modális ablak)
+
+Egy sor kiválasztásakor a rendszer modális ablakban jeleníti meg a részletes vizsgaadatokat.  
+Itt a felhasználó láthatja:
+
+- az azonosító és időbélyeg információkat,
+- az összegző teljesítménymutatókat,
+- a cellák és mondatok számszerű bontását,
+- a megjegyzést,
+- a mondateredmény szöveges részleteit.
+
+A modális megjelenítés előnye, hogy a felhasználó a lista kontextusának elhagyása nélkül tud részleteket elemezni.
+
+## Használhatósági és működési szempontok
+
+A modul kialakítása a gyakorlati használatot támogatja:
+
+- az adatok lapozott formában jelennek meg, így nem terhelik túl az oldalt,
+- a táblázat és a részletes nézet gyors átjárást biztosít a makro- és mikroszintű elemzés között,
+- hosszabb tartalom esetén a modális ablak görgethető, a bezárási lehetőség pedig végig elérhető marad.
+
+## Pedagógiai és adminisztratív jelentőség
+
+A vizsgák áttekintése nemcsak technikai riportálás, hanem pedagógiai visszacsatolás is.  
+Az oktató a részletes adatok alapján pontosabban azonosíthatja a tipikus hibamintákat, ezáltal célzottabban tud fejlesztő feladatokat adni.
+
+## Összegzés
+
+A „Vizsgák megtekintése” modul az értékelési folyamat egyik kulcseleme: áttekinthető listanézettel, célzott szűréssel és részletes modális elemzéssel támogatja a szakmai döntéshozatalt.  
+Szakdolgozati szempontból ez a komponens jól szemlélteti, hogyan kapcsolódik az adatalapú kiértékelés a tanulási folyamat minőségének fejlesztéséhez.
+
+5.2.5: Hozzáférési naplók
+
+# Az Access Logok modul bemutatása
+
+Az Access Logok modul az admin felület auditálási és ellenőrzési funkcióját biztosítja.  
+Célja, hogy a rendszerhasználathoz kapcsolódó események (például belépések, kilépések, aktivitási nyomok) visszakereshetők és áttekinthetők legyenek.
+
+## A modul szerepe
+
+A naplózási funkció a biztonság és az üzemeltetés szempontjából kiemelten fontos.  
+Segítségével az adminisztrátor képet kap arról, hogy ki, mikor és milyen körülmények között használta a rendszert.
+
+## Fő funkciók
+
+- **Naplóbejegyzések listázása:** időrendben megjelenített események.
+- **Szűrés és keresés:** célzott visszakeresés felhasználó, időszak vagy eseménytípus szerint.
+- **Áttekinthetőség:** táblázatos forma, amely támogatja a gyors ellenőrzést.
+- **Visszakövethetőség:** problémák vagy rendellenes használat esetén az eseménylánc rekonstruálható.
+
+## Üzemeltetési és biztonsági jelentőség
+
+Az Access Logok modul több szempontból támogatja a rendszer működését:
+
+- segít azonosítani a jogosulatlan vagy gyanús hozzáférési mintákat,
+- támogatja a hibakeresést és incidensvizsgálatot,
+- alapot ad a belső auditfolyamatokhoz,
+- növeli az üzemeltetés átláthatóságát és elszámoltathatóságát.
+
+## Pedagógiai rendszerben betöltött szerep
+
+Oktatási környezetben különösen fontos a felhasználói tevékenységek ellenőrizhetősége, mivel a rendszerben vizsgaeredmények és tanulói adatok is kezelve vannak.  
+A naplóadatok így nemcsak technikai, hanem adatvédelmi és szervezeti szempontból is relevánsak.
+
+## Összegzés
+
+Az Access Logok modul a rendszer kontrollmechanizmusának lényegi része.  
+Szakdolgozati nézőpontból jól bemutatja, hogy a funkcionális adminisztráció mellett hogyan jelenik meg a biztonságtudatos, auditálható működés követelménye egy komplex webes alkalmazásban.
+
+
+5.3: A felhasznaloi  felulet (www)
+
+# Cellauto webalkalmazas altalanos leirasa
+
+## 5.3.1. Bevezetes
+
+A Cellauto egy webes oktatasi es kutatasi celra fejlesztett alkalmazas, amely a sejtautomatak mukodesenek szimulaciojara epul. A rendszer kialakitasa soran kiemelt cel volt, hogy kulonbozo korosztalyok szamara is hasznalhato, jatekos, ugyanakkor szakmailag hasznos tanulasi kornyezet jon letre.  
+Az alkalmazas nemcsak a logikai gondolkodas fejleszteset tamogatja, hanem szolistakra es mondatlancokra epulo nyelvi feladatokkal a nyelvi kompetenciak erositeset is.
+
+## 5.3.2. A rendszer celja es pedagogiai szerepe
+
+A fejlesztes kozponti celja egy olyan digitalis tanulasi felulet letrehozasa, amely:
+
+- szemlelteti a sejtautomatak mukodesi elveit,
+- fejleszti a logikus gondolkodast es a kreativ problemamegoldast,
+- nyelvi elemek bevonasaval tamogatja a nyelvhelyesseg es nyelvtanulas gyakorlasat,
+- lehetoseget ad tanari iranyitas melletti gyakorlasi es vizsgahelyzetek kialakitasara.
+
+A rendszer ezen tulmenoen kutatasi celokra is alkalmas, mivel a felhasznaloi teljesitmenyek strukturalt adatformaban rogzithetok es utolag elemezhetok.
+
+## 5.3.3. Felhasznaloi szerepkorok
+
+Az alkalmazas tobb szerepkoros mukodest tamogat, amely differencialt jogosultsagkezelest tesz lehetove:
+
+- **Vendeg felhasznalo**: bejelentkezes nelkul probalhatja ki az alap homokozo funkciot.
+- **Diak felhasznalo**: gyakorolhat es vizsgazhat a tanar altal letrehozott feladatokon.
+- **Tanar felhasznalo**: feladatokat hozhat letre, vizsgaeredmenyeket es tanuloi visszajelzeseket tekinthet meg.
+- **Admin felhasznalo**: teljes koru rendszerfelugyeleti es kezelesi jogosultsagokkal rendelkezik.
+
+## 5.3.4. Fobb funkcionalis egysegek
+
+### 5.3.4.1 Homokozo mod
+
+A rendszer bejelentkezes nelkul is hasznalhato alapszinten. A homokozo mod helyi, adatbazis-muvelet nelkuli kiserletezest biztosít, ahol a felhasznalo szabadon kiprobalhatja a sejtautomata mukodeset.
+
+### 5.3.4.2 Regisztralt felhasznaloi funkciok
+
+Bejelentkezett allapotban a felhasznalo szamara tovabbi lehetosegek nyilnak meg:
+
+- sajat tablaallapot mentese,
+- sajat munka betoltese,
+- gyakorlo feladatok gyakorlasa,
+- vizsgafeladatok teljesitese,
+- eredmenyek rogzitese es visszakereshetosege.
+
+### 5.3.4.3 Tanari feladatkeszites
+
+A tanar kulonbozo tipusu feladatokat allithat ossze:
+
+1. **Sejtautomata alapu feladatok**, ahol a tanar kiindulo allapotot ad meg, a diak pedig meghatarozott generacioig folytatja a kitoltest.
+2. **Szolistaval tamogatott feladatok**, ahol a sejtes logika es a mondatalkotas egyszerre jelenik meg.
+3. **Vegyes feladatok**, ahol a diak eloszor sejtautomata feladatot old meg, majd ezutan lephet at a szavas-mondatos kitoltesre.
+
+## 5.3.4 Vizsgafolyamat es kiertekeles
+
+A vizsgarendszer idokorlattal mukodik. Ha az ido lejár, a vizsga automatikusan kiertekelesre kerul. A diak a rendelkezese alló ido lejarta elott is kezdemenyezheti a kiertekelest.
+
+A kiertekeles soran a rendszer rogzíti:
+
+- a vizsgaeredmenyt,
+- a teljesitesi idot,
+- a felhasznaloi azonositohoz kapcsolt vizsgaadatokat,
+- opcionálisan a diak altal kuldott megjegyzest.
+
+Ez a megjegyzes lehetoseget ad arra, hogy a diak jelezze, ha a feladat megfogalmazasa, a szolista, vagy a vizsga barmely eleme nem egyertelmu. A visszajelzes a vizsgaeredmenyhez kapcsolodik, es a tanar szamara utolag elerheto.
+
+## 5.3.5. Osszegzes
+
+A Cellauto webalkalmazas egy olyan komplex oktatasi rendszer, amely a sejtautomata-alapu logikai feladatokat es a nyelvi mondatalkotast kozos platformon egyesiti.  
+A rendszer kulonbozo szerepkorokre szabottan tamogatja a tanulasi, gyakorlasi, vizsga- es ertekelesi folyamatokat, ezaltal pedagogiai es kutatasi szempontbol is jol hasznosithato.

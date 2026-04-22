@@ -1,0 +1,59 @@
+[1] Moodle - elérhetősége
+https://elearning.uni-eszterhazy.hu, 2026.03.10.
+[2] Pegazus - elérhetősége
+https://pegazus.uni-eszterhazy.hu, 2026.03.10.
+[6] Laravel Livewire - szorakoztató leírása
+https://laravel-livewire.com, 2023.04.03.
+[22] Larevel Middleware dokumentáció
+https://laravel.com/docs/12.x/middleware, 2026.03.22.
+[11] React egyszerüen elmagyrázva
+https://kodbazis.hu/react-kurzus, 2025.10.18.
+[10] PHP Tanfolyam haladoknak
+https://kodbazis.hu/php-tanfolyam-haladoknak, 2025.12.12.
+[05] JavaScript az alapoktol
+https://kodbazis.hu/javascript-az-alapoktol, 2024.10.17.
+[02] JavaScript gyakorlo feladatok
+https://kodbazis.hu/javascript-gyakorlo-feladatsor, 2024.11.15.
+[99] JavaScript Tutorial
+https://www.w3schools.com/js/, 2024.10.19.
+[33] Unit Tests in PHP with PHPUnit - YouTube video
+https://www.youtube.com/watch?v=MEcumw0sb6Y, 2026.04.07.
+[22] Laravel Pint
+https://laravel.com/docs/12.x/pint, 2026.04.06.
+[29] React v19.2
+https://react.dev/learn, 2026.03.18.
+[43] TypeScript Documentation
+https://www.typescriptlang.org/docs/, 2026.02.18.
+[21] Vite
+https://vite.dev/guide/, 2026.04.07.
+[27] ESLint - Ellenőrizd a JavaScript-kódot, és javítsd a talált hibákat.
+https://eslint.org/, 2025.12.14.
+[25] MySql dokumentáció
+https://www.mysql.com/, 2024.12.19.
+[77] MySql - Introduction to InnoDB
+https://dev.mysql.com/doc/refman/8.4/en/innodb-introduction.html, 2026.01.25.
+[74] PHP Documentation
+https://www.php.net/docs.php, 2026.01.04.
+[38] Laravel Sanctum
+https://laravel.com/docs/12.x/sanctum, 2026.03.19.
+[43] HTML5
+https://www.w3.org/TR/2011/WD-html5-20110405/index.html
+[31] CSS3
+https://www.w3.org/TR/2001/WD-css3-roadmap-20010523/, 2026.01.19.
+[20] Conway’s Game of Life
+https://playgameoflife.com/2025.06.02.
+[99] Wikipedia - Conway's Game of Life
+https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life, 2026.02.08.
+[86] Conway - Életjáték
+https://conwaylife.com/, 2026.03.28.
+[56] YouTube video - Cellular automata tutorial - the basics
+https://www.youtube.com/watch?v=2nE0z_9-fCY, 2026.02.10.
+[91] Wikipedia - Cellular automaton
+https://en.wikipedia.org/wiki/Cellular_automaton, 2024.09.16.
+[73] An Intro to Cellular Automation
+https://www.gamedeveloper.com/design/an-intro-to-cellular-automation, 2026.04.01.
+[87] Coding Challenge 179: Elementary Cellular Automata - Cellauto
+https://www.youtube.com/watch?v=Ggxt06qSAe4, 2026.04.01.
+[92] Wolfram - Elementary Cellular Automaton
+https://mathworld.wolfram.com/ElementaryCellularAutomaton.html, 2026.03.04.
+

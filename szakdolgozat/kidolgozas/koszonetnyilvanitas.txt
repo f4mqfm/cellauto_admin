@@ -1,0 +1,14 @@
+Köszönetnyilvánítás
+
+Ezúton szeretném kifejezni őszinte hálámat Geda Gábor tanár úrnak, akinek támogatása, biztatása és szakmai útmutatása meghatározó szerepet játszott a program, valamint jelen szakdolgozat elkészítésében.
+
+Egyetemi tanulmányaim első félévében volt szerencsém megismerni Tanár urat A programozás módszertani alapjai tantárgy keretében. E tantárgy során találkoztam először a sejtautomaták világával, amely már akkor mély benyomást tett rám. A téma különlegessége és logikai szépsége olyan mértékben felkeltette érdeklődésemet, hogy késztetést éreztem a tananyagban szereplő mintázatok saját fejlesztésű szimulációs programmal történő reprodukálására.
+
+Első programom elkészítése során a tankönyvben bemutatott mintázatokat kívántam ellenőrizni. A szimuláció futtatása után azonban eltérést tapasztaltam a megadott eredményhez képest. Mivel nem kívántam elhamarkodott következtetést levonni, programomat többször átvizsgáltam, újrateszteltem, és több napon keresztül ellenőriztem a működését. Végül arra a megállapításra jutottam, hogy a tankönyvi példában szerepelhetett hiba. Megfigyelésemet megosztottam Geda Gábor tanár úrral, aki nyitottan és támogatóan fogadta észrevételemet.
+
+Ez a tapasztalat jelentette számomra a sejtautomaták iránti mélyebb érdeklődés kezdetét. Félévről félévre tovább foglalkoztam a témával, fejlesztettem korábbi elképzeléseimet, és a szakdolgozati témaválasztás idején egyértelmű volt számomra, hogy ezen a területen szeretném folytatni munkámat. Örömmel töltött el, hogy Tanár úr vállalta témavezetésemet.
+
+Külön köszönettel tartozom neki a szakdolgozat teljes folyamata során nyújtott segítségéért, ötleteiért és építő javaslataiért. A rendszer több fontos eleme – többek között a szólista, a vizsga- és gyakorló funkciók, valamint számos további fejlesztési irány – az ő támogatásával és inspirációjával születhetett meg.
+
+Hálás vagyok azért a bizalomért és szakmai támogatásért, amelyet a közös munka során kaptam.
+
